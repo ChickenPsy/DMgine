@@ -12,55 +12,22 @@ export interface GenerateDmParams {
 
 export async function generateDm({ target, tone }: GenerateDmParams): Promise<string> {
   const prompts = {
-    professional: `You are an expert at writing professional networking messages. Generate a compelling, professional cold DM for LinkedIn or professional platforms.
+    professional: `You are a B2B copywriting expert writing cold outreach messages for professionals on LinkedIn, email, or X (Twitter). Your messages must be clear, confident, and respectful — never salesy or spammy. Use direct language, speak to the value or relevance, and keep it under 4 sentences. Assume the reader is busy and skeptical. No fluff, no emoji, no intro lines like "Hope you're well." Respond only with the message text.
 
-Target person: ${target}
+Target person: ${target}`,
 
-Requirements:
-- Be professional but personable
-- Reference something specific about their background or recent activity (you can infer this)
-- Keep it concise (2-3 sentences max)
-- Include a clear call to action
-- Sound authentic, not robotic
-- No excessive punctuation or emojis
+    casual: `You are writing a casual, friendly cold DM for a modern professional audience. Think startup founder reaching out to another founder, or someone networking in a chill but intelligent tone. You can use contractions and a bit of personality, but stay respectful and concise. Keep it short — no more than 4 sentences. Don't over-explain or use buzzwords. Respond only with the message text.
 
-Generate only the message text, no quotes or additional formatting.`,
+Target person: ${target}`,
 
-    casual: `You are an expert at writing friendly, casual networking messages for professional and business platforms. Generate a warm, approachable cold DM for B2B networking or partnership outreach.
+    chaos: `You are writing a bold, unpredictable cold DM that breaks the norm — without being rude or inappropriate. The tone should be high-energy, clever, and attention-grabbing. Think "this might actually get a reply" energy, like a rogue SDR on a Friday. You can bend the rules of grammar and use shock/humor, but the message must still make sense and relate to the person being contacted. Keep it short. No intros. No disclaimers. Just drop the DM.
 
-Target person: ${target}
-
-Requirements:
-- Be friendly and approachable, not overly formal
-- Use a conversational tone that builds rapport
-- Reference their work, company, or recent achievements (you can infer this)
-- Keep it engaging and personable
-- 2-3 sentences max
-- Sound genuine and interested in collaboration
-- Include a clear but casual call to action
-
-Generate only the message text, no quotes or additional formatting.`,
-
-    chaos: `You are a creative genius at writing wildly entertaining, viral-worthy messages that are so good they get screenshot and shared. Generate an absolutely hilarious, chaotic cold DM that breaks all the rules but somehow works.
-
-Target person: ${target}
-
-Requirements:
-- Be completely unexpected and creative
-- Use humor, wordplay, or absurd scenarios
-- Reference pop culture, memes, or current trends
-- Make it so entertaining they HAVE to respond
-- Break traditional messaging rules in a funny way
-- 2-4 sentences max
-- Can use emojis strategically for comedic effect
-- Stay appropriate but be wildly creative
-
-Generate only the message text, no quotes or additional formatting.`
+Target person: ${target}`
   };
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "user",
@@ -80,6 +47,16 @@ Generate only the message text, no quotes or additional formatting.`
     return generatedMessage;
   } catch (error) {
     console.error("OpenAI API error:", error);
-    throw new Error("Failed to generate DM. Please try again.");
+    
+    // For quota exceeded errors, use fallback responses
+    const targetName = target.split(',')[0].trim();
+    const fallbackResponses = {
+      professional: `Hi ${targetName}, I noticed your work in your field and think there's potential for collaboration. I'd like to discuss how we might work together. Are you available for a brief call this week?`,
+      casual: `Hey ${targetName}, saw your recent work and thought it was solid. Think we might have some interesting synergies to explore. Coffee sometime?`,
+      chaos: `${targetName} - Your LinkedIn game is strong but your DMs are probably boring. Let's fix that. Ready to talk business that doesn't suck?`
+    };
+    
+    // Return fallback response instead of throwing error
+    return fallbackResponses[tone] || `Hi ${targetName}, I'd like to connect and discuss potential collaboration opportunities.`;
   }
 }

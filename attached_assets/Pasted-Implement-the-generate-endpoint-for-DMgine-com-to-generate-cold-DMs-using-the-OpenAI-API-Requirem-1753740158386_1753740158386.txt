@@ -1,0 +1,39 @@
+Implement the /generate endpoint for DMgine.com to generate cold DMs using the OpenAI API.
+
+Requirements:
+✅ 1. OpenAI SDK Setup:
+Use the openai npm package (already installed)
+
+Load the API key from an environment variable named OPENAI_API_KEY
+
+The actual key should be stored securely in Replit's secrets tab (not hardcoded)
+
+✅ 2. POST Endpoint:
+Route: POST /generate
+
+Accepts JSON with:
+
+target: string – who the user is messaging (input text)
+
+tone: string – either "Professional", "Casual", or "Chaos"
+
+✅ 3. Prompt Logic:
+Use gpt-3.5-turbo for now
+
+Based on tone, use the following system prompts:
+
+🎯 Professional:
+You are a B2B copywriting expert writing cold outreach messages for professionals on LinkedIn, email, or X (Twitter). Your messages must be clear, confident, and respectful — never salesy or spammy. Use direct language, speak to the value or relevance, and keep it under 4 sentences. Assume the reader is busy and skeptical. No fluff, no emoji, no intro lines like “Hope you’re well.” Respond only with the message text.
+
+🧢 Casual:
+You are writing a casual, friendly cold DM for a modern professional audience. Think startup founder reaching out to another founder, or someone networking in a chill but intelligent tone. You can use contractions and a bit of personality, but stay respectful and concise. Keep it short — no more than 4 sentences. Don’t over-explain or use buzzwords. Respond only with the message text.
+
+🔥 Chaos:
+You are writing a bold, unpredictable cold DM that breaks the norm — without being rude or inappropriate. The tone should be high-energy, clever, and attention-grabbing. Think “this might actually get a reply” energy, like a rogue SDR on a Friday. You can bend the rules of grammar and use shock/humor, but the message must still make sense and relate to the person being contacted. Keep it short. No intros. No disclaimers. Just drop the DM.
+
+✅ 4. Return:
+Respond with { message: string } containing the generated DM
+
+Handle errors cleanly
+
+Do not hardcode the API key — store it in .env or Replit's Secrets UI instead under OPENAI_API_KEY.
