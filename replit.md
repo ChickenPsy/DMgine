@@ -35,17 +35,22 @@ Preferred communication style: Simple, everyday language.
 
 ### Core Features
 1. **DM Generation**: AI-powered message generation with multiple tone options
-2. **Premium Features**: Chaos mode restricted as premium feature
-3. **Responsive UI**: Mobile-first design with Tailwind CSS
-4. **Real-time Feedback**: Toast notifications and loading states
+2. **Tier-Based Access**: Free, Lite, and Pro tiers with different token limits
+3. **Premium Features**: Chaos mode restricted as premium feature
+4. **Responsive UI**: Mobile-first design with Tailwind CSS
+5. **Real-time Feedback**: Toast notifications and loading states
 
 ### Database Schema
 - **Users Table**: Basic user authentication schema (id, username, password)
 - **DM Generations Table**: Stores generated messages with metadata (target, tone, message, timestamp)
 
 ### AI Integration
-- **OpenAI Integration**: GPT-4o model for message generation
-- **Prompt Engineering**: Specialized prompts for different tones (professional, flirty, chaos)
+- **OpenAI Integration**: GPT-4.1 (gpt-4-1106-preview) model for message generation
+- **Tier-Based Model Selection**: Different token limits based on user subscription
+  - Free tier: 150 max tokens
+  - Lite tier: 300 max tokens  
+  - Pro tier: 500 max tokens (unlimited effectively)
+- **Prompt Engineering**: Specialized prompts for different tones (professional, casual, chaos)
 - **Error Handling**: Graceful fallbacks and user feedback
 
 ### UI Components
@@ -58,12 +63,13 @@ Preferred communication style: Simple, everyday language.
 
 1. **User Input**: User enters target person and selects tone via form
 2. **Client Validation**: Zod schema validation on frontend
-3. **API Request**: POST to `/api/generate-dm` with validated data
-4. **Premium Check**: Server checks for premium features (chaos mode)
-5. **AI Generation**: OpenAI API call with tone-specific prompts
-6. **Storage**: Generated message stored in database
-7. **Response**: Generated message returned to client
-8. **UI Update**: Message displayed with copy functionality
+3. **API Request**: POST to `/generate` or `/api/generate-dm` with validated data
+4. **Tier Detection**: Server determines user tier (Free/Lite/Pro) or defaults to Free
+5. **Premium Check**: Server checks for premium features (chaos mode)
+6. **Model Configuration**: getModelConfig() helper determines appropriate model and token limits
+7. **AI Generation**: OpenAI API call with tier-specific configuration and tone-specific prompts
+8. **Response**: Generated message returned to client in { message: string } format
+9. **UI Update**: Message displayed with copy functionality
 
 ## External Dependencies
 

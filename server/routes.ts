@@ -5,11 +5,14 @@ import { generateDmRequestSchema } from "@shared/schema";
 import { generateDm } from "./services/openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Generate DM endpoint (new specification)
+  // Generate DM endpoint (new specification) with tier support
   app.post("/generate", async (req, res) => {
     try {
       const validatedData = generateDmRequestSchema.parse(req.body);
       const isPremium = req.body.isPremium || false;
+      
+      // Determine user tier - default to "Free" if no user object present
+      const userTier = (req as any).user?.tier || "Free";
       
       // Check if chaos mode is requested (mock premium feature)
       if (validatedData.tone === "chaos" && !isPremium) {
@@ -19,7 +22,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const generatedMessage = await generateDm(validatedData);
+      const generatedMessage = await generateDm({ 
+        ...validatedData, 
+        userTier 
+      });
       
       // Return in the exact format specified: { message: string }
       res.json({ 
@@ -41,11 +47,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Keep existing endpoint for backward compatibility
+  // Keep existing endpoint for backward compatibility with tier support
   app.post("/api/generate-dm", async (req, res) => {
     try {
       const validatedData = generateDmRequestSchema.parse(req.body);
       const isPremium = req.body.isPremium || false;
+      
+      // Determine user tier - default to "Free" if no user object present
+      const userTier = (req as any).user?.tier || "Free";
       
       // Check if chaos mode is requested (mock premium feature)
       if (validatedData.tone === "chaos" && !isPremium) {
@@ -55,7 +64,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const generatedMessage = await generateDm(validatedData);
+      const generatedMessage = await generateDm({ 
+        ...validatedData, 
+        userTier 
+      });
       
       // Store the generation in memory (optional)
       // await storage.storeDmGeneration({
@@ -83,6 +95,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false 
       });
     }
+  });
+
+  // Test endpoint to verify tier configuration (for development/testing)
+  app.get("/api/tier-config/:tier", (req, res) => {
+    const tier = req.params.tier as "Free" | "Lite" | "Pro";
+    
+    if (!["Free", "Lite", "Pro"].includes(tier)) {
+      return res.status(400).json({ error: "Invalid tier. Must be Free, Lite, or Pro" });
+    }
+    
+    // Import the function to test configuration
+    const getModelConfig = (tier: "Free" | "Lite" | "Pro") => {
+      const model = "gpt-4-1106-preview";
+      
+      switch (tier) {
+        case "Pro":
+          return { model, maxTokens: 500 };
+        case "Lite":
+          return { model, maxTokens: 300 };
+        case "Free":
+        default:
+          return { model, maxTokens: 150 };
+      }
+    };
+    
+    const config = getModelConfig(tier);
+    res.json({
+      tier,
+      model: config.model,
+      maxTokens: config.maxTokens,
+      description: `${tier} tier users get ${config.maxTokens} max tokens with ${config.model}`
+    });
   });
 
   const httpServer = createServer(app);

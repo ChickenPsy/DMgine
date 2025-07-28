@@ -5,12 +5,35 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
 });
 
+type UserTier = "Free" | "Lite" | "Pro";
+
+interface ModelConfig {
+  model: string;
+  maxTokens: number;
+}
+
+function getModelConfig(tier: UserTier): ModelConfig {
+  // Using gpt-4-1106-preview as requested for GPT-4.1
+  const model = "gpt-4-1106-preview";
+  
+  switch (tier) {
+    case "Pro":
+      return { model, maxTokens: 500 }; // Unlimited effectively, using reasonable cap
+    case "Lite":
+      return { model, maxTokens: 300 };
+    case "Free":
+    default:
+      return { model, maxTokens: 150 };
+  }
+}
+
 export interface GenerateDmParams {
   target: string;
   tone: "professional" | "casual" | "chaos";
+  userTier?: UserTier;
 }
 
-export async function generateDm({ target, tone }: GenerateDmParams): Promise<string> {
+export async function generateDm({ target, tone, userTier = "Free" }: GenerateDmParams): Promise<string> {
   const prompts = {
     professional: `You are a B2B copywriting expert writing cold outreach messages for professionals on LinkedIn, email, or X (Twitter). Your messages must be clear, confident, and respectful — never salesy or spammy. Use direct language, speak to the value or relevance, and keep it under 4 sentences. Assume the reader is busy and skeptical. No fluff, no emoji, no intro lines like "Hope you're well." Respond only with the message text.
 
@@ -25,16 +48,18 @@ Target person: ${target}`,
 Target person: ${target}`
   };
 
+  const config = getModelConfig(userTier);
+
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: config.model,
       messages: [
         {
           role: "user",
           content: prompts[tone],
         },
       ],
-      max_tokens: 200,
+      max_tokens: config.maxTokens,
       temperature: tone === "chaos" ? 0.9 : tone === "casual" ? 0.8 : 0.7,
     });
 
