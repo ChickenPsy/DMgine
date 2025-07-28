@@ -9,9 +9,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-dm", async (req, res) => {
     try {
       const validatedData = generateDmRequestSchema.parse(req.body);
+      const isPremium = req.body.isPremium || false;
       
       // Check if chaos mode is requested (mock premium feature)
-      if (validatedData.tone === "chaos") {
+      if (validatedData.tone === "chaos" && !isPremium) {
         return res.status(402).json({ 
           message: "Chaos Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
           requiresPremium: true 

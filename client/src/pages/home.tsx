@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Copy, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Link } from "wouter";
 
 interface GenerateDmResponse {
   message: string;
@@ -26,15 +27,23 @@ export default function Home() {
   const [tone, setTone] = useState<string>("");
   const [generatedMessage, setGeneratedMessage] = useState("");
   const [currentExample, setCurrentExample] = useState("professional");
+  const [isPremium, setIsPremium] = useState(false);
   const { toast } = useToast();
+
+  // Check premium status on component mount
+  useEffect(() => {
+    const premiumStatus = localStorage.getItem('dmgine_premium');
+    setIsPremium(premiumStatus === 'true');
+  }, []);
 
   const generateMutation = useMutation({
     mutationFn: async (data: { target: string; tone: string }) => {
-      const response = await apiRequest("POST", "/api/generate-dm", data);
+      const requestData = { ...data, isPremium };
+      const response = await apiRequest("POST", "/api/generate-dm", requestData);
       return response.json() as Promise<GenerateDmResponse>;
     },
     onSuccess: (data) => {
-      if (data.requiresPremium) {
+      if (data.requiresPremium && !isPremium) {
         toast({
           title: "Premium Feature",
           description: data.message,
@@ -43,7 +52,7 @@ export default function Home() {
       } else {
         setGeneratedMessage(data.message);
         toast({
-          title: "DM Generated!",
+          title: "Message Generated!",
           description: "Your message is ready to copy.",
         });
       }
@@ -70,6 +79,16 @@ export default function Home() {
       toast({
         title: "Missing Information", 
         description: "Please select a tone.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if user is trying to use Chaos Mode without premium
+    if (tone === "chaos" && !isPremium) {
+      toast({
+        title: "Premium Feature",
+        description: "Chaos Mode requires a premium subscription. Upgrade to unlock wildly creative messages!",
         variant: "destructive",
       });
       return;
@@ -110,9 +129,11 @@ export default function Home() {
             <Button variant="ghost" className="text-slate-600 hover:text-slate-800 font-medium">
               About
             </Button>
-            <Button className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium hover:shadow-lg transition-all duration-200">
-              Go Premium
-            </Button>
+            <Link href="/premium">
+              <Button className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium hover:shadow-lg transition-all duration-200">
+                Go Premium
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -164,7 +185,9 @@ export default function Home() {
                     <SelectContent>
                       <SelectItem value="professional">💼 Professional</SelectItem>
                       <SelectItem value="casual">💬 Casual</SelectItem>
-                      <SelectItem value="chaos">⚠️ Chaos Mode (Premium)</SelectItem>
+                      <SelectItem value="chaos">
+                        {isPremium ? "⚠️ Chaos Mode" : "⚠️ Chaos Mode (Premium)"}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -185,17 +208,33 @@ export default function Home() {
                 </Button>
 
                 {/* Premium Banner */}
-                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-sm">Unlock Chaos Mode + No Ads</h4>
-                      <p className="text-slate-600 text-sm">Get wildly creative messages that stand out</p>
+                {!isPremium ? (
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-sm">Unlock Chaos Mode + No Ads</h4>
+                        <p className="text-slate-600 text-sm">Get wildly creative messages that stand out</p>
+                      </div>
+                      <Link href="/premium">
+                        <Button className="bg-yellow-400 text-slate-800 font-bold px-4 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
+                          $7/mo
+                        </Button>
+                      </Link>
                     </div>
-                    <Button className="bg-yellow-400 text-slate-800 font-bold px-4 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
-                      $7/mo
-                    </Button>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-sm">Premium Active</h4>
+                        <p className="text-slate-600 text-sm">Enjoy unlimited Chaos Mode and ad-free experience</p>
+                      </div>
+                      <div className="bg-green-500 text-white font-bold px-3 py-1 rounded-lg text-sm">
+                        Premium
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Output Section */}
@@ -272,10 +311,10 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 h-full relative">
+          <Card className={`${isPremium ? 'bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-200' : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200'} h-full relative`}>
             <div className="absolute top-2 right-2">
-              <span className="bg-yellow-400 text-slate-800 text-xs font-bold px-2 py-1 rounded-full">
-                PREMIUM
+              <span className={`${isPremium ? 'bg-green-500 text-white' : 'bg-yellow-400 text-slate-800'} text-xs font-bold px-2 py-1 rounded-full`}>
+                {isPremium ? "UNLOCKED" : "PREMIUM"}
               </span>
             </div>
             <CardContent className="p-6 h-full flex flex-col">
@@ -283,15 +322,19 @@ export default function Home() {
                 <span className="text-2xl">⚠️</span>
                 <h3 className="font-bold text-slate-800 text-base">Chaos Mode</h3>
               </div>
-              <p className="text-slate-600 text-sm italic leading-relaxed blur-sm flex-1">
-                "Listen up, future business partner in crime! I've been stalking your LinkedIn
-                (professionally, obviously) and I'm convinced we need to collaborate before the robots take over..."
+              <p className={`text-slate-600 text-sm italic leading-relaxed flex-1 ${!isPremium ? 'blur-sm' : ''}`}>
+                "Listen up, future business partner in crime! I've been professionally stalking your LinkedIn
+                (totally normal, right?) and I'm convinced we need to collaborate before the robots take over our jobs. Your recent post about market disruption had me nodding so hard I probably looked like a dashboard bobblehead."
               </p>
-              <div className="mt-3">
-                <button className="text-purple-600 font-semibold text-sm hover:text-indigo-600 transition-colors">
-                  Unlock to see full message →
-                </button>
-              </div>
+              {!isPremium && (
+                <div className="mt-3">
+                  <Link href="/premium">
+                    <button className="text-purple-600 font-semibold text-sm hover:text-indigo-600 transition-colors">
+                      Unlock to see full message →
+                    </button>
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
