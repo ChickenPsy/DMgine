@@ -72,16 +72,144 @@ Target person: ${target}`
     return generatedMessage;
   } catch (error) {
     console.error("OpenAI API error:", error);
-    
-    // For quota exceeded errors, use fallback responses
-    const targetName = target.split(',')[0].trim();
-    const fallbackResponses = {
-      professional: `Hi ${targetName}, I noticed your work in your field and think there's potential for collaboration. I'd like to discuss how we might work together. Are you available for a brief call this week?`,
-      casual: `Hey ${targetName}, saw your recent work and thought it was solid. Think we might have some interesting synergies to explore. Coffee sometime?`,
-      chaos: `${targetName} - Your LinkedIn game is strong but your DMs are probably boring. Let's fix that. Ready to talk business that doesn't suck?`
+    throw new Error("Failed to generate DM using OpenAI");
+  }
+}
+
+// Smart personalization interfaces and functions
+export interface PersonalizationData {
+  recipientName: string;
+  recipientRole?: string;
+  companyName?: string;
+  reason?: string;
+  customHook?: string;
+  tone: string;
+  scenario?: string;
+  platform?: string;
+}
+
+export function buildPersonalizedPrompt(data: PersonalizationData): string {
+  const {
+    recipientName,
+    recipientRole,
+    companyName,
+    reason,
+    customHook,
+    tone,
+    scenario,
+    platform
+  } = data;
+
+  // Map tone to appropriate style instruction
+  const toneInstructions = {
+    professional: "Write in a professional, respectful tone. Be direct and business-focused.",
+    friendly: "Write in a warm, approachable tone while maintaining professionalism.",
+    direct: "Write in a clear, straightforward tone. Get to the point quickly.",
+    empathetic: "Write with understanding and emotional intelligence. Show genuine interest.",
+    assertive: "Write with confidence and authority. Be persuasive but respectful.",
+    chaos: "Write with bold creativity and humor. Break conventional rules while staying relevant."
+  };
+
+  // Map platform to appropriate format
+  const platformInstructions = {
+    linkedin: "Format this as a LinkedIn message. Keep it professional and concise.",
+    email: "Format this as a professional email. Include a clear subject line approach.",
+    twitter: "Format this as a Twitter DM. Keep it very brief and engaging.", 
+    instagram: "Format this as an Instagram DM. Keep it casual and visual-friendly."
+  };
+
+  // Map scenario to context
+  const scenarioContext = {
+    'b2b-sales': 'B2B sales introduction',
+    'partnership': 'partnership inquiry', 
+    'recruiting': 'recruiting pitch',
+    'startup-collab': 'startup collaboration',
+    'cold-intro': 'cold introduction'
+  };
+
+  // Build comprehensive prompt
+  let prompt = `You are an expert at writing high-converting cold outreach messages. `;
+  
+  // Add tone instruction
+  if (tone && toneInstructions[tone as keyof typeof toneInstructions]) {
+    prompt += `${toneInstructions[tone as keyof typeof toneInstructions]} `;
+  }
+
+  // Add platform instruction  
+  if (platform && platformInstructions[platform as keyof typeof platformInstructions]) {
+    prompt += `${platformInstructions[platform as keyof typeof platformInstructions]} `;
+  }
+
+  prompt += `\n\nWrite a cold ${platform || 'message'} with the following details:\n`;
+  prompt += `- Recipient: ${recipientName}`;
+  
+  if (recipientRole) {
+    prompt += `, ${recipientRole}`;
+  }
+  
+  if (companyName) {
+    prompt += ` at ${companyName}`;
+  }
+
+  if (reason) {
+    const reasonText = {
+      job: 'job opportunity',
+      partnership: 'partnership opportunity', 
+      sales: 'sales pitch',
+      intro: 'introduction',
+      other: 'outreach'
     };
+    prompt += `\n- Purpose: ${reasonText[reason as keyof typeof reasonText] || reason}`;
+  }
+
+  if (scenario) {
+    prompt += `\n- Context: ${scenarioContext[scenario as keyof typeof scenarioContext] || scenario}`;
+  }
+
+  if (customHook) {
+    prompt += `\n- Hook/Reference: ${customHook}`;
+  }
+
+  prompt += `\n\nRequirements:
+- Keep it concise (2-4 sentences max)
+- Make it personal and relevant
+- Include a clear call-to-action
+- No generic templates or clichés
+- Don't use "Hope this finds you well" or similar
+- Return only the message text, no subject line or formatting
+
+Generate the message:`;
+
+  return prompt;
+}
+
+export async function generatePersonalizedDM(prompt: string, userTier: UserTier): Promise<string> {
+  // Use GPT-3.5 for now as requested, GPT-4 for Pro later
+  const model = userTier === "Pro" ? "gpt-4-1106-preview" : "gpt-3.5-turbo";
+  const maxTokens = userTier === "Pro" ? 500 : userTier === "Lite" ? 300 : 150;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model,
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      max_tokens: maxTokens,
+      temperature: 0.8,
+    });
+
+    const generatedMessage = response.choices[0].message.content?.trim();
     
-    // Return fallback response instead of throwing error
-    return fallbackResponses[tone] || `Hi ${targetName}, I'd like to connect and discuss potential collaboration opportunities.`;
+    if (!generatedMessage) {
+      throw new Error("No message generated");
+    }
+
+    return generatedMessage;
+  } catch (error) {
+    console.error("OpenAI API error for personalized DM:", error);
+    throw new Error("Failed to generate personalized DM using OpenAI");
   }
 }

@@ -93,12 +93,20 @@ export default function Home() {
         throw new Error('Usage limit reached');
       }
 
+      // Send new personalization data structure
       const requestData = { 
-        ...data, 
-        isPremium: user.tier === 'pro' || tone !== 'chaos' 
+        recipientName,
+        recipientRole,
+        companyName,
+        reason: messageReason,
+        customHook: optionalHook,
+        tone,
+        scenario: useCase,
+        platform,
+        isPremium: user.tier === 'pro'
       };
       
-      const response = await apiRequest("POST", "/generate", requestData);
+      const response = await apiRequest("POST", "/api/generate-dm", requestData);
       return response.json() as Promise<GenerateDmResponse>;
     },
     onSuccess: (data) => {

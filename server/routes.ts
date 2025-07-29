@@ -2,10 +2,10 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateDmRequestSchema } from "@shared/schema";
-import { generateDm } from "./services/openai";
+import { generateDm, buildPersonalizedPrompt, generatePersonalizedDM } from "./services/openai";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Generate DM endpoint (new specification) with tier support
+  // Legacy generate endpoint for backward compatibility
   app.post("/generate", async (req, res) => {
     try {
       const validatedData = generateDmRequestSchema.parse(req.body);
@@ -47,51 +47,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Keep existing endpoint for backward compatibility with tier support
+  // Smart personalization endpoint for generate DM
   app.post("/api/generate-dm", async (req, res) => {
     try {
-      const validatedData = generateDmRequestSchema.parse(req.body);
-      const isPremium = req.body.isPremium || false;
+      console.log("Smart personalization DM request received:", req.body);
       
-      // Determine user tier - default to "Free" if no user object present
-      const userTier = (req as any).user?.tier || "Free";
+      const { 
+        recipientName, 
+        recipientRole, 
+        companyName, 
+        reason, 
+        customHook, 
+        tone, 
+        scenario, 
+        platform,
+        isPremium = false 
+      } = req.body;
       
-      // Check if chaos mode is requested (mock premium feature)
-      if (validatedData.tone === "chaos" && !isPremium) {
-        return res.status(402).json({ 
-          message: "Chaos Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
-          requiresPremium: true 
+      if (!recipientName || !tone) {
+        return res.status(400).json({ 
+          error: "Missing required fields", 
+          required: ["recipientName", "tone"],
+          success: false
         });
       }
 
-      const generatedMessage = await generateDm({ 
-        ...validatedData, 
-        userTier 
-      });
-      
-      // Store the generation in memory (optional)
-      // await storage.storeDmGeneration({
-      //   target: validatedData.target,
-      //   tone: validatedData.tone,
-      //   generatedMessage,
-      // });
+      // Check if chaos mode is requested and user is not premium
+      if (tone === "chaos" && !isPremium) {
+        return res.status(402).json({
+          message: "Chaos Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
+          requiresPremium: true,
+          success: false
+        });
+      }
 
+      // Determine user tier for model configuration
+      const userTier: "Free" | "Lite" | "Pro" = isPremium ? "Pro" : "Free";
+      console.log(`Using ${userTier} tier config for smart personalization`);
+
+      // Build dynamic prompt
+      const prompt = buildPersonalizedPrompt({
+        recipientName,
+        recipientRole,
+        companyName,
+        reason,
+        customHook,
+        tone,
+        scenario,
+        platform
+      });
+
+      const generatedMessage = await generatePersonalizedDM(prompt, userTier);
+      
       res.json({ 
         message: generatedMessage,
         success: true 
       });
-    } catch (error) {
-      console.error("DM generation error:", error);
-      
-      if (error instanceof Error && error.name === "ZodError") {
-        return res.status(400).json({ 
-          message: "Invalid input data",
-          errors: (error as any).errors 
-        });
-      }
-      
+    } catch (error: any) {
+      console.error("Error in /api/generate-dm endpoint:", error);
       res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Failed to generate DM. Please try again.",
+        error: "Failed to generate DM", 
+        message: error.message,
         success: false 
       });
     }
