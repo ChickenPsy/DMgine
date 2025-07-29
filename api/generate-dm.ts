@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generatePersonalizedDM, buildPersonalizedPrompt } from './services/openai';
+import { generatePersonalizedDM, buildPersonalizedPrompt } from './services/openai.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,29 +15,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    console.log("Smart personalization DM request received:", req.body);
-
-    const { 
-      recipientName, 
-      recipientRole, 
-      companyName, 
-      reason, 
-      customHook, 
-      tone, 
-      scenario, 
+    const {
+      recipientName,
+      recipientRole,
+      companyName,
+      reason,
+      customHook,
+      tone,
+      scenario,
       platform,
-      isPremium = false 
+      isPremium = false
     } = req.body;
 
     if (!recipientName || !tone) {
-      return res.status(400).json({ 
-        error: "Missing required fields", 
+      return res.status(400).json({
+        error: "Missing required fields",
         required: ["recipientName", "tone"],
         success: false
       });
     }
 
-    // Check if off the rails mode is requested and user is not premium
     if (tone === "chaos" && !isPremium) {
       return res.status(402).json({
         message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
@@ -46,11 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Determine user tier for model configuration
     const userTier: "Free" | "Lite" | "Pro" = isPremium ? "Pro" : "Free";
-    console.log(`Using ${userTier} tier config for smart personalization`);
 
-    // Build dynamic prompt
     const prompt = buildPersonalizedPrompt({
       recipientName,
       recipientRole,
@@ -64,16 +58,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const generatedMessage = await generatePersonalizedDM(prompt, userTier);
 
-    res.json({ 
+    res.json({
       message: generatedMessage,
-      success: true 
+      success: true
     });
   } catch (error: any) {
-    console.error("Error in /api/generate-dm endpoint:", error);
-    res.status(500).json({ 
-      error: "Failed to generate DM", 
+    res.status(500).json({
+      error: "Failed to generate DM",
       message: error.message,
-      success: false 
+      success: false
     });
   }
 }
