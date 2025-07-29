@@ -19,11 +19,11 @@ Preferred communication style: Simple, everyday language.
 - **Build Tool**: Vite with hot module replacement
 
 ### Backend Architecture
-- **Runtime**: Vercel serverless functions with Node.js
+- **Runtime**: Node.js with Express.js
 - **Language**: TypeScript with ES modules
-- **API**: Individual serverless functions in /api/ directory
-- **Structure**: Converted from Express.js to Vercel-compatible serverless functions
-- **Deployment**: Ready for Vercel serverless deployment with proper req/res handling
+- **API**: RESTful API design
+- **Middleware**: Express middleware for logging, JSON parsing, and error handling
+- **Development**: Vite integration for seamless full-stack development
 
 ### Database Architecture
 - **ORM**: Drizzle ORM with PostgreSQL dialect
@@ -107,7 +107,6 @@ Preferred communication style: Simple, everyday language.
 
 ### Development Workflow
 - **Hot Reload**: Vite HMR for frontend changes
-- **Serverless Functions**: Individual API endpoints as Vercel functions
+- **Server Restart**: tsx for backend TypeScript execution
 - **Database**: Live schema updates with Drizzle push
 - **Type Safety**: Shared types between client and server
-- **Recent Migration**: Backend converted from Express.js to Vercel serverless functions (July 29, 2025)

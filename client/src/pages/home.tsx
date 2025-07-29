@@ -76,16 +76,7 @@ export default function Home() {
       if (firebaseUser) {
         // Get user profile from Firestore
         const profile = await getUserProfile(firebaseUser.uid);
-        const wasAlreadyAuthenticated = user.isAuthenticated;
         userStore.setFirebaseUser(firebaseUser, profile);
-        
-        // Show welcome toast only for new sign-ins (not on page refresh)
-        if (!wasAlreadyAuthenticated) {
-          toast({
-            title: `Welcome, ${firebaseUser.displayName?.split(' ')[0] || 'there'}! 🎉`,
-            description: "You now have 10 DMs per day. Start generating!",
-          });
-        }
       } else {
         userStore.signOut();
       }
@@ -204,21 +195,15 @@ export default function Home() {
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
-      // Success feedback will be handled by the auth state change listener
-      console.log("Sign in initiated successfully");
-    } catch (error: any) {
-      console.error("Sign in error:", error);
-      
-      // Don't show error for cancelled popup (user closed the popup)
-      if (error?.code === 'auth/cancelled-popup-request') {
-        console.log("User cancelled sign-in popup");
-        return;
-      }
-      
-      // Only show error toast for actual failures
       toast({
-        title: "Sign in failed",
-        description: "Please try again or check your internet connection.",
+        title: "Welcome! 🎉",
+        description: "You're now signed in with Google.",
+      });
+    } catch (error) {
+      console.error("Sign in error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to sign in. Please try again.",
         variant: "destructive",
       });
     }
