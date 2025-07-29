@@ -107,7 +107,7 @@ export function buildPersonalizedPrompt(data: PersonalizationData): string {
     direct: "Write in a clear, straightforward tone. Get to the point quickly.",
     empathetic: "Write with understanding and emotional intelligence. Show genuine interest.",
     assertive: "Write with confidence and authority. Be persuasive but respectful.",
-    chaos: "Write with bold creativity and humor. Break conventional rules while staying relevant."
+    chaos: "Write with bold creativity and humor. Break conventional rules while staying relevant. This is Off the Rails Mode - go completely wild with creativity while staying professional enough to work."
   };
 
   // Map platform to appropriate format

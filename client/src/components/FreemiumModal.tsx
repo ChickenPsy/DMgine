@@ -131,7 +131,7 @@ export function FreemiumModal({ isOpen, onClose, onSuccess }: FreemiumModalProps
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>All chaos mode features</span>
+                <span>All off the rails mode features</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />

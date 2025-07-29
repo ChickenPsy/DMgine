@@ -14,10 +14,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Determine user tier - default to "Free" if no user object present
       const userTier = (req as any).user?.tier || "Free";
       
-      // Check if chaos mode is requested (mock premium feature)
+      // Check if off the rails mode is requested (mock premium feature)
       if (validatedData.tone === "chaos" && !isPremium) {
         return res.status(402).json({ 
-          message: "Chaos Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
+          message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
           requiresPremium: true 
         });
       }
@@ -72,10 +72,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if chaos mode is requested and user is not premium
+      // Check if off the rails mode is requested and user is not premium
       if (tone === "chaos" && !isPremium) {
         return res.status(402).json({
-          message: "Chaos Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
+          message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
           requiresPremium: true,
           success: false
         });

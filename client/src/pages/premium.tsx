@@ -19,7 +19,7 @@ export default function Premium() {
       setIsUpgraded(true);
       toast({
         title: "Welcome to Premium!",
-        description: "Your upgrade was successful. Chaos Mode is now unlocked!",
+        description: "Your upgrade was successful. Off the Rails Mode is now unlocked!",
       });
       
       // In a real app, this would update user state/database
@@ -57,7 +57,7 @@ export default function Premium() {
             </span>
           </h2>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            Unlock Chaos Mode, Remove Ads, and Access Your DM History
+            Unlock Off the Rails Mode, Remove Ads, and Access Your DM History
           </p>
         </div>
 
@@ -71,7 +71,7 @@ export default function Premium() {
                   <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-slate-700 font-medium">Access to Chaos Mode</span>
+                  <span className="text-slate-700 font-medium">Access to Off the Rails Mode</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
@@ -143,10 +143,10 @@ export default function Premium() {
         <Card className="bg-white rounded-2xl shadow-xl border border-slate-200 mb-12">
           <CardContent className="p-8">
             <h3 className="text-3xl font-bold text-slate-800 text-center mb-8">
-              What You Get with Chaos Mode
+              What You Get with Off the Rails Mode
             </h3>
             <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-6">
-              <h4 className="font-bold text-slate-700 mb-3">Sample Chaos Mode Message:</h4>
+              <h4 className="font-bold text-slate-700 mb-3">Sample Off the Rails Message:</h4>
               <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded">
                 <p className="text-slate-700 italic leading-relaxed">
                   "Listen up, future business partner in crime! I've been professionally stalking your LinkedIn 
@@ -156,7 +156,7 @@ export default function Premium() {
                 </p>
               </div>
               <p className="text-sm text-slate-500 mt-3">
-                Chaos Mode creates wildly entertaining messages that break the rules but somehow work perfectly.
+                Off the Rails Mode creates wildly entertaining messages that break the rules but somehow work perfectly.
               </p>
             </div>
           </CardContent>

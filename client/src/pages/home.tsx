@@ -409,7 +409,7 @@ export default function Home() {
                       <SelectItem value="empathetic">Empathetic</SelectItem>
                       <SelectItem value="assertive">Assertive</SelectItem>
                       <SelectItem value="chaos" disabled={user.tier !== 'premium'}>
-                        Chaos Mode {user.tier !== 'premium' && '(Premium only)'}
+                        🚂 Off the Rails Mode {user.tier !== 'premium' && '(Premium only)'}
                       </SelectItem>
                     </SelectContent>
                   </Select>
