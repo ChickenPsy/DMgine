@@ -34,6 +34,16 @@ export default function Home() {
   const [currentExample, setCurrentExample] = useState("professional");
   const [showFreemiumModal, setShowFreemiumModal] = useState(false);
   const [user, setUser] = useState<AppUser>(userStore.getUser());
+  
+  // New form states for personalization engine
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientRole, setRecipientRole] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [messageReason, setMessageReason] = useState("");
+  const [optionalHook, setOptionalHook] = useState("");
+  const [useCase, setUseCase] = useState("");
+  const [platform, setPlatform] = useState("");
+  
   const { toast } = useToast();
 
   // Initialize usage tracker and auth
@@ -129,16 +139,23 @@ export default function Home() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!target.trim() || !tone) {
+    // Validate required fields for new form
+    if (!recipientName.trim() || !tone) {
       toast({
         title: "Missing information",
-        description: "Please fill in both the target person and select a tone.",
+        description: "Please fill in the recipient name and select a tone.",
         variant: "destructive",
       });
       return;
     }
 
-    generateMutation.mutate({ target, tone });
+    // Construct target from new form fields
+    const targetDescription = `${recipientName}${recipientRole ? `, ${recipientRole}` : ''}${companyName ? ` at ${companyName}` : ''}`;
+    
+    generateMutation.mutate({ 
+      target: targetDescription, 
+      tone
+    });
   };
 
   const copyToClipboard = async () => {
@@ -189,7 +206,7 @@ export default function Home() {
     return <Badge variant="outline">{remaining}/3 free</Badge>;
   };
 
-  const isGenerateDisabled = !canGenerate() || generateMutation.isPending || !target.trim() || !tone;
+  const isGenerateDisabled = !canGenerate() || generateMutation.isPending || !recipientName.trim() || !tone;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
@@ -225,15 +242,40 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Hero Section */}
-        <div className="text-center mb-8">
-          <h2 className="text-4xl font-bold tracking-tight mb-4">
-            Generate Viral Cold DMs
-          </h2>
-          <p className="text-xl text-muted-foreground mb-2">
-            AI-powered messages that actually get replies
+        <div className="text-center mb-16">
+          <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight mb-6 bg-gradient-to-r from-purple-600 via-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            DMgine
+          </h1>
+          <p className="text-2xl md:text-3xl font-semibold mb-4 text-foreground">
+            AI Cold DMs That Actually Get Replies
           </p>
+          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Generate personalized, high-converting messages for any platform. 
+            No more awkward intros or ignored outreach.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <Button 
+              size="lg" 
+              className="text-lg px-8 py-6 rounded-xl"
+              onClick={() => {
+                document.querySelector('#recipientName')?.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'center' 
+                });
+              }}
+            >
+              🎯 Generate My First DM
+            </Button>
+            <Link href="/premium">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6 rounded-xl">
+                See Plans
+              </Button>
+            </Link>
+          </div>
+          
           {!user.isAuthenticated && (
             <p className="text-sm text-muted-foreground">
               {usageTracker.getRemainingFreeUses()} free generations remaining
@@ -241,98 +283,222 @@ export default function Home() {
           )}
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Input Form */}
-          <Card className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <Label htmlFor="target" className="text-base font-medium">
-                  Who are you reaching out to?
+        {/* Smart Personalization Engine */}
+        <Card className="max-w-4xl mx-auto p-8 shadow-2xl">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-2">Smart Personalization Engine</h2>
+            <p className="text-muted-foreground">Tell us about your outreach and we'll craft the perfect message</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Recipient Info Section */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">✍️</span>
+                </div>
+                <h3 className="text-lg font-semibold">Recipient Info</h3>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="recipientName" className="text-sm font-medium">
+                    Recipient Name
+                  </Label>
+                  <Input
+                    id="recipientName"
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    placeholder="e.g., Sarah Johnson"
+                    className="rounded-lg"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="recipientRole" className="text-sm font-medium">
+                    Their Role
+                  </Label>
+                  <Input
+                    id="recipientRole"
+                    value={recipientRole}
+                    onChange={(e) => setRecipientRole(e.target.value)}
+                    placeholder="e.g., Marketing Director"
+                    className="rounded-lg"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="companyName" className="text-sm font-medium">
+                    Company Name
+                  </Label>
+                  <Input
+                    id="companyName"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="e.g., TechCorp Inc."
+                    className="rounded-lg"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="messageReason" className="text-sm font-medium">
+                    Reason for Message
+                  </Label>
+                  <Select value={messageReason} onValueChange={setMessageReason}>
+                    <SelectTrigger className="rounded-lg">
+                      <SelectValue placeholder="Select reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="job">Job Opportunity</SelectItem>
+                      <SelectItem value="partnership">Partnership</SelectItem>
+                      <SelectItem value="sales">Sales</SelectItem>
+                      <SelectItem value="intro">Introduction</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="optionalHook" className="text-sm font-medium">
+                  Optional Hook
                 </Label>
                 <Input
-                  id="target"
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                  placeholder="e.g., Sarah, a marketing director at a tech startup"
-                  className="mt-2"
+                  id="optionalHook"
+                  value={optionalHook}
+                  onChange={(e) => setOptionalHook(e.target.value)}
+                  placeholder="e.g., Saw your post on LinkedIn about AI trends"
+                  className="rounded-lg"
                 />
               </div>
+            </div>
 
-              <div>
-                <Label htmlFor="tone" className="text-base font-medium">
-                  Choose your tone
-                </Label>
-                <Select value={tone} onValueChange={(value) => {
-                  setTone(value);
-                  setCurrentExample(value);
-                }}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select tone style" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="professional">
-                      💼 Professional - Clean & respectful
-                    </SelectItem>
-                    <SelectItem value="casual">
-                      😊 Casual - Friendly & approachable
-                    </SelectItem>
-                    <SelectItem value="chaos" disabled={user.tier !== 'pro'}>
-                      🔥 Chaos Mode {user.tier !== 'pro' && '(Pro only)'}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Tone Selector Section */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">🤖</span>
+                </div>
+                <h3 className="text-lg font-semibold">Tone Selector</h3>
               </div>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="toneStyle" className="text-sm font-medium">
+                    Message Tone
+                  </Label>
+                  <Select value={tone} onValueChange={(value) => {
+                    setTone(value);
+                    setCurrentExample(value === 'casual' ? 'casual' : 'professional');
+                  }}>
+                    <SelectTrigger className="rounded-lg">
+                      <SelectValue placeholder="Select tone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="professional">Professional</SelectItem>
+                      <SelectItem value="friendly">Friendly</SelectItem>
+                      <SelectItem value="direct">Direct</SelectItem>
+                      <SelectItem value="empathetic">Empathetic</SelectItem>
+                      <SelectItem value="assertive">Assertive</SelectItem>
+                      <SelectItem value="chaos" disabled={user.tier !== 'pro'}>
+                        Chaos Mode {user.tier !== 'pro' && '(Pro only)'}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
 
+            {/* Use-Case Scenario Section */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">📄</span>
+                </div>
+                <h3 className="text-lg font-semibold">Use-Case Scenario</h3>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="useCase" className="text-sm font-medium">
+                    Scenario Type
+                  </Label>
+                  <Select value={useCase} onValueChange={setUseCase}>
+                    <SelectTrigger className="rounded-lg">
+                      <SelectValue placeholder="Select scenario" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="b2b-sales">B2B Sales Intro</SelectItem>
+                      <SelectItem value="partnership">Partnership Inquiry</SelectItem>
+                      <SelectItem value="recruiting">Recruiting Pitch</SelectItem>
+                      <SelectItem value="startup-collab">Startup Collaboration</SelectItem>
+                      <SelectItem value="cold-intro">Cold Introduction</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="platform" className="text-sm font-medium">
+                    Platform
+                  </Label>
+                  <Select value={platform} onValueChange={setPlatform}>
+                    <SelectTrigger className="rounded-lg">
+                      <SelectValue placeholder="Select platform" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="linkedin">🌐 LinkedIn</SelectItem>
+                      <SelectItem value="email">📧 Email</SelectItem>
+                      <SelectItem value="twitter">🐦 Twitter</SelectItem>
+                      <SelectItem value="instagram">📸 Instagram</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Generate Button */}
+            <div className="pt-8">
               <Button 
                 type="submit" 
                 size="lg" 
-                className="w-full"
+                className="w-full text-xl py-6 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 disabled={isGenerateDisabled}
               >
                 {generateMutation.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
+                    <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+                    Generating Your Perfect DM...
                   </>
                 ) : (
                   <>
-                    <Zap className="w-4 h-4 mr-2" />
-                    {!canGenerate() ? 'Upgrade to Continue' : 'Slide In Smooth'}
+                    🎯 Generate Message
                   </>
                 )}
               </Button>
-            </form>
-          </Card>
+            </div>
+          </form>
+        </Card>
 
-          {/* Output/Example */}
-          <Card className="p-6">
+        {/* Generated Message Display */}
+        {generatedMessage && (
+          <Card className="max-w-4xl mx-auto mt-8 p-8">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">
-                  {generatedMessage ? "Your Generated DM" : `${currentExample.charAt(0).toUpperCase() + currentExample.slice(1)} Example`}
-                </h3>
-                {generatedMessage && (
-                  <Button variant="outline" size="sm" onClick={copyToClipboard}>
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy
-                  </Button>
-                )}
+                <h3 className="text-xl font-semibold">Your Generated DM</h3>
+                <Button variant="outline" onClick={copyToClipboard} className="rounded-lg">
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Message
+                </Button>
               </div>
               
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {generatedMessage || exampleOutputs[currentExample as keyof typeof exampleOutputs]}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 p-6 rounded-xl border">
+                <p className="text-base leading-relaxed whitespace-pre-wrap">
+                  {generatedMessage}
                 </p>
               </div>
-              
-              {!generatedMessage && (
-                <p className="text-xs text-muted-foreground">
-                  This is an example. Fill out the form to generate your personalized DM.
-                </p>
-              )}
             </div>
           </Card>
-        </div>
+        )}
       </div>
 
       <FreemiumModal 
