@@ -5,14 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Copy, Loader2, Crown, User, LogOut, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { FreemiumModal } from "@/components/FreemiumModal";
+import { usageTracker } from "@/lib/usage-tracker";
+import { userStore, AppUser } from "@/lib/user-store";
+import { onAuthStateChange, signOutUser } from "@/lib/firebase";
 
 interface GenerateDmResponse {
   message: string;
-  success: boolean;
+  success?: boolean;
   requiresPremium?: boolean;
 }
 
@@ -27,376 +32,319 @@ export default function Home() {
   const [tone, setTone] = useState<string>("");
   const [generatedMessage, setGeneratedMessage] = useState("");
   const [currentExample, setCurrentExample] = useState("professional");
-  const [isPremium, setIsPremium] = useState(false);
+  const [showFreemiumModal, setShowFreemiumModal] = useState(false);
+  const [user, setUser] = useState<AppUser>(userStore.getUser());
   const { toast } = useToast();
 
-  // Check premium status on component mount
+  // Initialize usage tracker and auth
   useEffect(() => {
-    const premiumStatus = localStorage.getItem('dmgine_premium');
-    setIsPremium(premiumStatus === 'true');
-  }, []);
+    const initializeApp = async () => {
+      await usageTracker.initialize();
+      
+      // Check for upgrade success from URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('upgrade') === 'success') {
+        userStore.upgradeToPro();
+        toast({
+          title: "Welcome to Pro! 🎉",
+          description: "You now have unlimited DM generation.",
+        });
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    };
+
+    initializeApp();
+
+    // Subscribe to user changes
+    const unsubscribe = userStore.subscribe(setUser);
+
+    // Setup Firebase auth listener
+    const unsubscribeAuth = onAuthStateChange((firebaseUser) => {
+      userStore.setFirebaseUser(firebaseUser);
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeAuth();
+    };
+  }, [toast]);
+
+  const canGenerate = () => {
+    if (user.tier === 'pro') return true;
+    if (user.isAuthenticated) return true; // Authenticated users get 10/day
+    return usageTracker.canUseFree(); // Non-authenticated get 3 free
+  };
 
   const generateMutation = useMutation({
     mutationFn: async (data: { target: string; tone: string }) => {
-      const requestData = { ...data, isPremium };
-      const response = await apiRequest("POST", "/api/generate-dm", requestData);
+      // Check usage limits before making request
+      if (!canGenerate()) {
+        throw new Error('Usage limit reached');
+      }
+
+      const requestData = { 
+        ...data, 
+        isPremium: user.tier === 'pro' || tone !== 'chaos' 
+      };
+      
+      const response = await apiRequest("POST", "/generate", requestData);
       return response.json() as Promise<GenerateDmResponse>;
     },
     onSuccess: (data) => {
-      if (data.requiresPremium && !isPremium) {
-        toast({
-          title: "Premium Feature",
-          description: data.message,
-          variant: "destructive",
-        });
-      } else {
-        setGeneratedMessage(data.message);
-        toast({
-          title: "Message Generated!",
-          description: "Your message is ready to copy.",
-        });
+      if (data.requiresPremium) {
+        setShowFreemiumModal(true);
+        return;
       }
+
+      setGeneratedMessage(data.message);
+      
+      // Track usage for non-pro users
+      if (user.tier !== 'pro') {
+        if (!user.isAuthenticated) {
+          usageTracker.incrementFreeUsage();
+        }
+      }
+
+      toast({
+        title: "DM Generated! 🎯",
+        description: "Your cold DM is ready to slide into those inboxes.",
+      });
     },
     onError: (error) => {
+      if (error.message === 'Usage limit reached') {
+        setShowFreemiumModal(true);
+        return;
+      }
+
+      console.error("Error generating DM:", error);
       toast({
-        title: "Generation Failed",
-        description: "Failed to generate DM. Please try again.",
+        title: "Generation failed",
+        description: "Please try again or check your connection.",
         variant: "destructive",
       });
     },
   });
 
-  const handleGenerate = () => {
-    if (!target.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please tell us who you're messaging.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!tone) {
-      toast({
-        title: "Missing Information", 
-        description: "Please select a tone.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Check if user is trying to use Chaos Mode without premium
-    if (tone === "chaos" && !isPremium) {
+    if (!target.trim() || !tone) {
       toast({
-        title: "Premium Feature",
-        description: "Chaos Mode requires a premium subscription. Upgrade to unlock wildly creative messages!",
+        title: "Missing information",
+        description: "Please fill in both the target person and select a tone.",
         variant: "destructive",
       });
       return;
     }
-    
-    generateMutation.mutate({ target: target.trim(), tone });
+
+    generateMutation.mutate({ target, tone });
   };
 
   const copyToClipboard = async () => {
-    const textToCopy = generatedMessage || exampleOutputs[currentExample as keyof typeof exampleOutputs];
+    if (!generatedMessage) return;
+    
     try {
-      await navigator.clipboard.writeText(textToCopy.replace(/"/g, ''));
+      await navigator.clipboard.writeText(generatedMessage);
       toast({
-        title: "Copied!",
-        description: "Message copied to clipboard.",
+        title: "Copied! 📋",
+        description: "Your DM is ready to paste.",
       });
     } catch (error) {
       toast({
-        title: "Copy Failed",
-        description: "Failed to copy to clipboard.",
+        title: "Copy failed",
+        description: "Please select and copy manually.",
         variant: "destructive",
       });
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOutUser();
+      userStore.signOut();
+      toast({
+        title: "Signed out",
+        description: "You've been signed out successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Sign out failed",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getUsageDisplay = () => {
+    if (user.tier === 'pro') {
+      return <Badge className="bg-amber-500 hover:bg-amber-600"><Crown className="w-3 h-3 mr-1" />Pro</Badge>;
+    }
+    
+    if (user.isAuthenticated) {
+      return <Badge variant="secondary"><User className="w-3 h-3 mr-1" />Signed In</Badge>;
+    }
+    
+    const remaining = usageTracker.getRemainingFreeUses();
+    return <Badge variant="outline">{remaining}/3 free</Badge>;
+  };
+
+  const isGenerateDisabled = !canGenerate() || generateMutation.isPending || !target.trim() || !tone;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <header className="w-full py-6 px-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">DM</span>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-800">DMgine.com</h1>
+      <header className="border-b bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-primary">DMgine</h1>
+            <span className="text-sm text-muted-foreground">by AI</span>
           </div>
-          <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" className="text-slate-600 hover:text-slate-800 font-medium">
-              About
-            </Button>
+          
+          <div className="flex items-center gap-4">
+            {getUsageDisplay()}
+            
+            {user.isAuthenticated && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {user.firebaseUser?.displayName || user.firebaseUser?.email}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+            
             <Link href="/premium">
-              <Button className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-medium hover:shadow-lg transition-all duration-200">
-                Go Premium
+              <Button variant="outline" size="sm">
+                <Crown className="w-4 h-4 mr-2" />
+                Go Pro
               </Button>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="text-center mb-12">
-          <h2 className="text-5xl md:text-6xl font-black text-slate-800 mb-6 leading-tight">
-            Generate{" "}
-            <span className="bg-gradient-to-r from-purple-500 to-indigo-600 bg-clip-text text-transparent">
-              Epic DMs
-            </span>
-            <br />
-            That Actually Work
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Hero Section */}
+        <div className="text-center mb-8">
+          <h2 className="text-4xl font-bold tracking-tight mb-4">
+            Generate Viral Cold DMs
           </h2>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
-            AI-powered direct messages for LinkedIn, Twitter, and business platforms.
-            Stop overthinking, start connecting.
+          <p className="text-xl text-muted-foreground mb-2">
+            AI-powered messages that actually get replies
           </p>
+          {!user.isAuthenticated && (
+            <p className="text-sm text-muted-foreground">
+              {usageTracker.getRemainingFreeUses()} free generations remaining
+            </p>
+          )}
         </div>
 
-        {/* DM Generator Card */}
-        <Card className="bg-white rounded-2xl shadow-xl border border-slate-200 mb-8">
-          <CardContent className="p-8">
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Input Section */}
-              <div className="space-y-6">
-                <div>
-                  <Label className="block text-sm font-semibold text-slate-700 mb-3">
-                    Who are you messaging?
-                  </Label>
-                  <Input
-                    type="text"
-                    placeholder="e.g., Sarah from marketing, cute person from coffee shop..."
-                    value={target}
-                    onChange={(e) => setTarget(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-purple-500 font-medium"
-                  />
-                </div>
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Input Form */}
+          <Card className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <Label htmlFor="target" className="text-base font-medium">
+                  Who are you reaching out to?
+                </Label>
+                <Input
+                  id="target"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  placeholder="e.g., Sarah, a marketing director at a tech startup"
+                  className="mt-2"
+                />
+              </div>
 
-                <div>
-                  <Label className="block text-sm font-semibold text-slate-700 mb-3">
-                    Choose your tone
-                  </Label>
-                  <Select value={tone} onValueChange={setTone}>
-                    <SelectTrigger className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-purple-500 font-medium">
-                      <SelectValue placeholder="Select a tone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="professional">💼 Professional</SelectItem>
-                      <SelectItem value="casual">💬 Casual</SelectItem>
-                      <SelectItem value="chaos">
-                        {isPremium ? "⚠️ Chaos Mode" : "⚠️ Chaos Mode (Premium)"}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label htmlFor="tone" className="text-base font-medium">
+                  Choose your tone
+                </Label>
+                <Select value={tone} onValueChange={(value) => {
+                  setTone(value);
+                  setCurrentExample(value);
+                }}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select tone style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="professional">
+                      💼 Professional - Clean & respectful
+                    </SelectItem>
+                    <SelectItem value="casual">
+                      😊 Casual - Friendly & approachable
+                    </SelectItem>
+                    <SelectItem value="chaos" disabled={user.tier !== 'pro'}>
+                      🔥 Chaos Mode {user.tier !== 'pro' && '(Pro only)'}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <Button
-                  onClick={handleGenerate}
-                  disabled={generateMutation.isPending}
-                  className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 text-lg"
-                >
-                  {generateMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Message"
-                  )}
-                </Button>
-
-                {/* Premium Banner */}
-                {!isPremium ? (
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-sm">Unlock Chaos Mode + No Ads</h4>
-                        <p className="text-slate-600 text-sm">Get wildly creative messages that stand out</p>
-                      </div>
-                      <Link href="/premium">
-                        <Button className="bg-yellow-400 text-slate-800 font-bold px-4 py-2 rounded-lg text-sm hover:bg-yellow-300 transition-colors">
-                          $7/mo
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="w-full"
+                disabled={isGenerateDisabled}
+              >
+                {generateMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
                 ) : (
-                  <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-sm">Premium Active</h4>
-                        <p className="text-slate-600 text-sm">Enjoy unlimited Chaos Mode and ad-free experience</p>
-                      </div>
-                      <div className="bg-green-500 text-white font-bold px-3 py-1 rounded-lg text-sm">
-                        Premium
-                      </div>
-                    </div>
-                  </div>
+                  <>
+                    <Zap className="w-4 h-4 mr-2" />
+                    {!canGenerate() ? 'Upgrade to Continue' : 'Slide In Smooth'}
+                  </>
+                )}
+              </Button>
+            </form>
+          </Card>
+
+          {/* Output/Example */}
+          <Card className="p-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  {generatedMessage ? "Your Generated DM" : `${currentExample.charAt(0).toUpperCase() + currentExample.slice(1)} Example`}
+                </h3>
+                {generatedMessage && (
+                  <Button variant="outline" size="sm" onClick={copyToClipboard}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy
+                  </Button>
                 )}
               </div>
-
-              {/* Output Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="block text-sm font-semibold text-slate-700">
-                    Your generated message
-                  </Label>
-                  <Button
-                    onClick={copyToClipboard}
-                    variant="ghost"
-                    className="text-purple-600 hover:text-indigo-600 font-medium text-sm flex items-center space-x-2 transition-colors"
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span>Copy</span>
-                  </Button>
-                </div>
-
-                <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 min-h-[200px] relative">
-                  {generateMutation.isPending ? (
-                    <div className="flex items-center justify-center min-h-[150px]">
-                      <div className="text-center">
-                        <Loader2 className="animate-spin w-8 h-8 mx-auto mb-4 text-purple-600" />
-                        <p className="text-slate-600 font-medium">AI is generating your message...</p>
-                      </div>
-                    </div>
-                  ) : generatedMessage ? (
-                    <div>
-                      <p className="mb-4 font-medium text-slate-700">Generated Message:</p>
-                      <p className="text-slate-600 leading-relaxed">{generatedMessage}</p>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="mb-4 font-medium text-slate-700">Example: Professional Tone</p>
-                      <p className="text-slate-600 leading-relaxed">{exampleOutputs.professional}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* AdSense Placeholder */}
-                <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
-                  <p className="text-gray-500 font-medium">Advertisement</p>
-                  <p className="text-gray-400 text-sm mt-1">AdSense placement area</p>
-                </div>
+              
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {generatedMessage || exampleOutputs[currentExample as keyof typeof exampleOutputs]}
+                </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Example Outputs Section */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <Card className="bg-white shadow-lg border border-slate-200 h-full">
-            <CardContent className="p-6 h-full flex flex-col">
-              <div className="flex items-center space-x-2 mb-4">
-                <span className="text-2xl">💼</span>
-                <h3 className="font-bold text-slate-800 text-base">Professional</h3>
-              </div>
-              <p className="text-slate-600 text-sm italic leading-relaxed flex-1">
-                "Hi Jessica! Your LinkedIn article on sustainable business practices caught my attention.
-                The statistics you shared about ROI improvements were fascinating. I'd love to connect and discuss this further."
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white shadow-lg border border-slate-200 h-full">
-            <CardContent className="p-6 h-full flex flex-col">
-              <div className="flex items-center space-x-2 mb-4">
-                <span className="text-2xl">💬</span>
-                <h3 className="font-bold text-slate-800 text-base">Casual</h3>
-              </div>
-              <p className="text-slate-600 text-sm italic leading-relaxed flex-1">
-                "Hey Alex! Really enjoyed your presentation at the tech summit last week. Your approach to scaling B2B partnerships was brilliant. Would love to grab coffee and explore potential collaboration opportunities."
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className={`${isPremium ? 'bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-200' : 'bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200'} h-full relative`}>
-            <div className="absolute top-2 right-2">
-              <span className={`${isPremium ? 'bg-green-500 text-white' : 'bg-yellow-400 text-slate-800'} text-xs font-bold px-2 py-1 rounded-full`}>
-                {isPremium ? "UNLOCKED" : "PREMIUM"}
-              </span>
-            </div>
-            <CardContent className="p-6 h-full flex flex-col">
-              <div className="flex items-center space-x-2 mb-4">
-                <span className="text-2xl">⚠️</span>
-                <h3 className="font-bold text-slate-800 text-base">Chaos Mode</h3>
-              </div>
-              <p className={`text-slate-600 text-sm italic leading-relaxed flex-1 ${!isPremium ? 'blur-sm' : ''}`}>
-                "Listen up, future business partner in crime! I've been professionally stalking your LinkedIn
-                (totally normal, right?) and I'm convinced we need to collaborate before the robots take over our jobs. Your recent post about market disruption had me nodding so hard I probably looked like a dashboard bobblehead."
-              </p>
-              {!isPremium && (
-                <div className="mt-3">
-                  <Link href="/premium">
-                    <button className="text-purple-600 font-semibold text-sm hover:text-indigo-600 transition-colors">
-                      Unlock to see full message →
-                    </button>
-                  </Link>
-                </div>
+              
+              {!generatedMessage && (
+                <p className="text-xs text-muted-foreground">
+                  This is an example. Fill out the form to generate your personalized DM.
+                </p>
               )}
-            </CardContent>
+            </div>
           </Card>
         </div>
+      </div>
 
-        {/* Features Section */}
-        <Card className="bg-white rounded-2xl shadow-xl border border-slate-200 mb-12">
-          <CardContent className="p-8">
-            <h3 className="text-3xl font-bold text-slate-800 text-center mb-8">
-              Why DMgine Works So Well
-            </h3>
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl text-white font-bold">AI</span>
-                </div>
-                <h4 className="font-bold text-slate-800 mb-2">AI-Powered</h4>
-                <p className="text-slate-600 text-sm">Advanced GPT models trained on thousands of successful messages</p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl text-white font-bold">⚡</span>
-                </div>
-                <h4 className="font-bold text-slate-800 mb-2">Instant Results</h4>
-                <p className="text-slate-600 text-sm">Generate perfect messages in seconds, not hours of overthinking</p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl text-white font-bold">3</span>
-                </div>
-                <h4 className="font-bold text-slate-800 mb-2">Multiple Tones</h4>
-                <p className="text-slate-600 text-sm">From professional networking to casual business outreach</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-800 text-white py-12 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">DM</span>
-            </div>
-            <h3 className="text-xl font-bold">DMgine.com</h3>
-          </div>
-          <p className="text-slate-400 mb-6 text-lg font-medium">
-            Written by DMgine.com – Direct Messaging, Engineered.
-          </p>
-          <div className="flex justify-center space-x-8 text-sm">
-            <a href="#" className="text-slate-400 hover:text-white transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="text-slate-400 hover:text-white transition-colors">
-              Terms of Service
-            </a>
-            <a href="#" className="text-slate-400 hover:text-white transition-colors">
-              Contact
-            </a>
-          </div>
-        </div>
-      </footer>
+      <FreemiumModal 
+        isOpen={showFreemiumModal}
+        onClose={() => setShowFreemiumModal(false)}
+        onSuccess={() => {
+          // Retry the generation after successful upgrade/login
+          if (target && tone) {
+            generateMutation.mutate({ target, tone });
+          }
+        }}
+      />
     </div>
   );
 }
