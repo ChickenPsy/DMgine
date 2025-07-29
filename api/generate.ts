@@ -1,56 +1,72 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateDm } from './services/openai';
+import { generatePersonalizedDM, buildPersonalizedPrompt } from './services/openai.ts';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { target, tone } = req.body;
-    const isPremium = req.body.isPremium || false;
-    
-    if (!target || !tone) {
+    const {
+      recipientName,
+      recipientRole,
+      companyName,
+      reason,
+      customHook,
+      tone,
+      scenario,
+      platform,
+      isPremium = false
+    } = req.body;
+
+    if (!recipientName || !tone) {
       return res.status(400).json({
         error: "Missing required fields",
-        required: ["target", "tone"]
-      });
-    }
-    
-    if (!["professional", "casual", "chaos"].includes(tone)) {
-      return res.status(400).json({
-        error: "Invalid tone. Must be professional, casual, or chaos"
-      });
-    }
-    
-    // Determine user tier - default to "Free" if no user object present
-    const userTier = "Free";
-    
-    // Check if off the rails mode is requested (mock premium feature)
-    if (tone === "chaos" && !isPremium) {
-      return res.status(402).json({ 
-        message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
-        requiresPremium: true 
+        required: ["recipientName", "tone"],
+        success: false
       });
     }
 
-    const generatedMessage = await generateDm({ 
-      target, 
-      tone, 
-      userTier 
+    if (tone === "chaos" && !isPremium) {
+      return res.status(402).json({
+        message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
+        requiresPremium: true,
+        success: false
+      });
+    }
+
+    const userTier: "Free" | "Lite" | "Pro" = isPremium ? "Pro" : "Free";
+
+    const prompt = buildPersonalizedPrompt({
+      recipientName,
+      recipientRole,
+      companyName,
+      reason,
+      customHook,
+      tone,
+      scenario,
+      platform
     });
-    
-    // Return in the exact format specified: { message: string }
-    res.json({ 
-      message: generatedMessage
+
+    const generatedMessage = await generatePersonalizedDM(prompt, userTier);
+
+    res.json({
+      message: generatedMessage,
+      success: true
     });
-  } catch (error) {
-    console.error("DM generation error:", error);
-    
-    // Handle validation errors gracefully
-    
-    res.status(500).json({ 
-      message: error instanceof Error ? error.message : "Failed to generate DM. Please try again."
+  } catch (error: any) {
+    res.status(500).json({
+      error: "Failed to generate DM",
+      message: error.message,
+      success: false
     });
   }
 }
