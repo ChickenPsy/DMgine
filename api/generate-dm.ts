@@ -2,13 +2,21 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { generatePersonalizedDM, buildPersonalizedPrompt } from './services/openai';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     console.log("Smart personalization DM request received:", req.body);
-    
+
     const { 
       recipientName, 
       recipientRole, 
@@ -20,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       platform,
       isPremium = false 
     } = req.body;
-    
+
     if (!recipientName || !tone) {
       return res.status(400).json({ 
         error: "Missing required fields", 
@@ -55,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const generatedMessage = await generatePersonalizedDM(prompt, userTier);
-    
+
     res.json({ 
       message: generatedMessage,
       success: true 
