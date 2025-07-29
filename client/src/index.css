@@ -76,6 +76,7 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   display: inline-block;
+  letter-spacing: -0.02em;
 }
 
 /* Custom button styles for gradients */
