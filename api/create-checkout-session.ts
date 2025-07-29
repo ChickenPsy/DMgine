@@ -12,7 +12,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error('Stripe secret key not configured');
     }
     
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // Dynamic import to avoid build issues
+    const Stripe = await import('stripe');
+    const stripe = new Stripe.default(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16',
+    });
     
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],

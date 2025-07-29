@@ -8,7 +8,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       '/api/generate-dm',
       '/api/generate', 
       '/api/create-checkout-session',
-      '/api/tier-config/[tier]'
+      '/api/tier-config'
     ]
   });
 }

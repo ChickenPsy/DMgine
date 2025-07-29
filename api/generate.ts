@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { generateDmRequestSchema } from '@shared/schema';
+import { generateDmRequestSchema } from './lib/schema';
 import { generateDm } from './services/openai';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
