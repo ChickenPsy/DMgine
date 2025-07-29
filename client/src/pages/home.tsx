@@ -54,9 +54,9 @@ export default function Home() {
       // Check for upgrade success from URL params
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('upgrade') === 'success') {
-        userStore.upgradeToPro();
+        userStore.upgradeToPremium();
         toast({
-          title: "Welcome to Pro! 🎉",
+          title: "Welcome to Premium! 🎉",
           description: "You now have unlimited DM generation.",
         });
         // Clean up URL
@@ -81,7 +81,7 @@ export default function Home() {
   }, [toast]);
 
   const canGenerate = () => {
-    if (user.tier === 'pro') return true;
+    if (user.tier === 'premium') return true;
     if (user.isAuthenticated) return true; // Authenticated users get 10/day
     return usageTracker.canUseFree(); // Non-authenticated get 3 free
   };
@@ -103,7 +103,7 @@ export default function Home() {
         tone,
         scenario: useCase,
         platform,
-        isPremium: user.tier === 'pro'
+        isPremium: user.tier === 'premium'
       };
       
       const response = await apiRequest("POST", "/api/generate-dm", requestData);
@@ -117,8 +117,8 @@ export default function Home() {
 
       setGeneratedMessage(data.message);
       
-      // Track usage for non-pro users
-      if (user.tier !== 'pro') {
+      // Track usage for non-premium users
+      if (user.tier !== 'premium') {
         if (!user.isAuthenticated) {
           usageTracker.incrementFreeUsage();
         }
@@ -202,8 +202,8 @@ export default function Home() {
   };
 
   const getUsageDisplay = () => {
-    if (user.tier === 'pro') {
-      return <Badge className="bg-amber-500 hover:bg-amber-600"><Crown className="w-3 h-3 mr-1" />Pro</Badge>;
+    if (user.tier === 'premium') {
+      return <Badge className="bg-amber-500 hover:bg-amber-600"><Crown className="w-3 h-3 mr-1" />Premium</Badge>;
     }
     
     if (user.isAuthenticated) {
@@ -243,7 +243,7 @@ export default function Home() {
             <Link href="/premium">
               <Button variant="outline" size="sm">
                 <Crown className="w-4 h-4 mr-2" />
-                Go Pro
+                Go Premium
               </Button>
             </Link>
           </div>
@@ -408,8 +408,8 @@ export default function Home() {
                       <SelectItem value="direct">Direct</SelectItem>
                       <SelectItem value="empathetic">Empathetic</SelectItem>
                       <SelectItem value="assertive">Assertive</SelectItem>
-                      <SelectItem value="chaos" disabled={user.tier !== 'pro'}>
-                        Chaos Mode {user.tier !== 'pro' && '(Pro only)'}
+                      <SelectItem value="chaos" disabled={user.tier !== 'premium'}>
+                        Chaos Mode {user.tier !== 'premium' && '(Premium only)'}
                       </SelectItem>
                     </SelectContent>
                   </Select>

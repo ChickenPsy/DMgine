@@ -43,7 +43,7 @@ export function FreemiumModal({ isOpen, onClose, onSuccess }: FreemiumModalProps
     }
   };
 
-  const handleUpgradeToPro = async () => {
+  const handleUpgradeToPremium = async () => {
     setIsProcessingPayment(true);
     try {
       // Create Stripe checkout session
@@ -115,7 +115,7 @@ export function FreemiumModal({ isOpen, onClose, onSuccess }: FreemiumModalProps
             <div className="flex items-center gap-3 mb-3">
               <Crown className="h-5 w-5 text-amber-500" />
               <div className="flex-1">
-                <h3 className="font-semibold">Go Pro</h3>
+                <h3 className="font-semibold">Go Premium</h3>
                 <p className="text-sm text-muted-foreground">Unlimited DMs forever</p>
               </div>
               <div className="text-right">
@@ -140,11 +140,11 @@ export function FreemiumModal({ isOpen, onClose, onSuccess }: FreemiumModalProps
             </div>
 
             <Button 
-              onClick={handleUpgradeToPro}
+              onClick={handleUpgradeToPremium}
               disabled={isLoading || isProcessingPayment}
               className="w-full bg-primary hover:bg-primary/90"
             >
-              {isProcessingPayment ? "Processing..." : "Upgrade to Pro ($4.99)"}
+              {isProcessingPayment ? "Processing..." : "Upgrade to Premium ($4.99)"}
             </Button>
           </Card>
         </div>

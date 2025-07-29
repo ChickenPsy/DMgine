@@ -1,6 +1,6 @@
 import { User } from "firebase/auth";
 
-export type UserTier = 'free' | 'pro';
+export type UserTier = 'free' | 'premium';
 
 export interface AppUser {
   firebaseUser: User | null;
@@ -22,7 +22,7 @@ export class UserStore {
   private constructor() {
     // Load tier from localStorage on initialization
     const storedTier = localStorage.getItem(USER_TIER_KEY) as UserTier;
-    if (storedTier === 'pro' || storedTier === 'free') {
+    if (storedTier === 'premium' || storedTier === 'free') {
       this.user.tier = storedTier;
     }
   }
@@ -50,12 +50,12 @@ export class UserStore {
     this.notifyListeners();
   }
 
-  upgradeToPro(): void {
-    this.setTier('pro');
+  upgradeToPremium(): void {
+    this.setTier('premium');
   }
 
-  isPro(): boolean {
-    return this.user.tier === 'pro';
+  isPremium(): boolean {
+    return this.user.tier === 'premium';
   }
 
   isAuthenticated(): boolean {
@@ -76,7 +76,7 @@ export class UserStore {
   signOut(): void {
     this.user.firebaseUser = null;
     this.user.isAuthenticated = false;
-    // Keep tier as it might be pro (paid)
+    // Keep tier as it might be premium (paid)
     this.notifyListeners();
   }
 }

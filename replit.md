@@ -35,7 +35,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Core Features
 1. **DM Generation**: AI-powered message generation with multiple tone options
-2. **Tier-Based Access**: Free, Lite, and Pro tiers with different token limits
+2. **Tier-Based Access**: Free, Lite, and Premium tiers with different token limits
 3. **Premium Features**: Chaos mode restricted as premium feature
 4. **Responsive UI**: Mobile-first design with Tailwind CSS
 5. **Real-time Feedback**: Toast notifications and loading states
@@ -49,7 +49,7 @@ Preferred communication style: Simple, everyday language.
 - **Tier-Based Model Selection**: Different token limits based on user subscription
   - Free tier: 150 max tokens
   - Lite tier: 300 max tokens  
-  - Pro tier: 500 max tokens (unlimited effectively)
+  - Premium tier: 500 max tokens (unlimited effectively)
 - **Prompt Engineering**: Specialized prompts for different tones (professional, casual, chaos)
 - **Error Handling**: Graceful fallbacks and user feedback
 
@@ -64,7 +64,7 @@ Preferred communication style: Simple, everyday language.
 1. **User Input**: User enters target person and selects tone via form
 2. **Client Validation**: Zod schema validation on frontend
 3. **API Request**: POST to `/generate` or `/api/generate-dm` with validated data
-4. **Tier Detection**: Server determines user tier (Free/Lite/Pro) or defaults to Free
+4. **Tier Detection**: Server determines user tier (Free/Lite/Premium) or defaults to Free
 5. **Premium Check**: Server checks for premium features (chaos mode)
 6. **Model Configuration**: getModelConfig() helper determines appropriate model and token limits
 7. **AI Generation**: OpenAI API call with tier-specific configuration and tone-specific prompts
