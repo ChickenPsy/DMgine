@@ -100,85 +100,32 @@ export function buildPersonalizedPrompt(data: PersonalizationData): string {
     platform
   } = data;
 
-  // Map tone to appropriate style instruction
-  const toneInstructions = {
-    professional: "Write in a professional, respectful tone. Be direct and business-focused.",
-    friendly: "Write in a warm, approachable tone while maintaining professionalism.",
-    direct: "Write in a clear, straightforward tone. Get to the point quickly.",
-    empathetic: "Write with understanding and emotional intelligence. Show genuine interest.",
-    assertive: "Write with confidence and authority. Be persuasive but respectful.",
-    chaos: "Write with bold creativity and humor. Break conventional rules while staying relevant. This is Off the Rails Mode - go completely wild with creativity while staying professional enough to work."
-  };
+  // Map tone to message tone values
+  const messageTone = tone === "chaos" ? "Off the Rails" : 
+                     tone === "professional" ? "Professional" :
+                     tone === "casual" ? "Casual" : tone;
 
-  // Map platform to appropriate format
-  const platformInstructions = {
-    linkedin: "Format this as a LinkedIn message. Keep it professional and concise.",
-    email: "Format this as a professional email. Include a clear subject line approach.",
-    twitter: "Format this as a Twitter DM. Keep it very brief and engaging.", 
-    instagram: "Format this as an Instagram DM. Keep it casual and visual-friendly."
-  };
+  // Map scenario to scenario type
+  const scenarioType = scenario || "cold outreach";
 
-  // Map scenario to context
-  const scenarioContext = {
-    'b2b-sales': 'B2B sales introduction',
-    'partnership': 'partnership inquiry', 
-    'recruiting': 'recruiting pitch',
-    'startup-collab': 'startup collaboration',
-    'cold-intro': 'cold introduction'
-  };
+  // Use the improved prompt structure
+  const prompt = `You're a world-class cold outreach copywriter. 
 
-  // Build comprehensive prompt
-  let prompt = `You are an expert at writing high-converting cold outreach messages. `;
-  
-  // Add tone instruction
-  if (tone && toneInstructions[tone as keyof typeof toneInstructions]) {
-    prompt += `${toneInstructions[tone as keyof typeof toneInstructions]} `;
-  }
+Your job is to craft short, punchy DMs for ${platform || 'LinkedIn'}, based on these inputs:
+- Recipient: ${recipientName}${recipientRole ? `, ${recipientRole}` : ''}${companyName ? ` at ${companyName}` : ''}
+- Scenario: ${scenarioType}
+- Tone: ${messageTone}
+- Hook: ${customHook || 'N/A'}
 
-  // Add platform instruction  
-  if (platform && platformInstructions[platform as keyof typeof platformInstructions]) {
-    prompt += `${platformInstructions[platform as keyof typeof platformInstructions]} `;
-  }
+Write 3 variations that:
+1. Sound natural, confident, and human (no robotic or AI-sounding text)
+2. Include a unique insight or hook related to the scenario
+3. Stay within the platform's message limits (e.g. Twitter/LinkedIn DMs = ~280 characters)
+4. Avoid fluff like "Hope this finds you well"
+5. Spark curiosity, tease value, or prompt a response — don't explain everything
+6. Respect the tone. If tone is "Off the Rails", get weird, bold, or chaotic. If it's "Professional", stay crisp but not boring.
 
-  prompt += `\n\nWrite a cold ${platform || 'message'} with the following details:\n`;
-  prompt += `- Recipient: ${recipientName}`;
-  
-  if (recipientRole) {
-    prompt += `, ${recipientRole}`;
-  }
-  
-  if (companyName) {
-    prompt += ` at ${companyName}`;
-  }
-
-  if (reason) {
-    const reasonText = {
-      job: 'job opportunity',
-      partnership: 'partnership opportunity', 
-      sales: 'sales pitch',
-      intro: 'introduction',
-      other: 'outreach'
-    };
-    prompt += `\n- Purpose: ${reasonText[reason as keyof typeof reasonText] || reason}`;
-  }
-
-  if (scenario) {
-    prompt += `\n- Context: ${scenarioContext[scenario as keyof typeof scenarioContext] || scenario}`;
-  }
-
-  if (customHook) {
-    prompt += `\n- Hook/Reference: ${customHook}`;
-  }
-
-  prompt += `\n\nRequirements:
-- Keep it concise (2-4 sentences max)
-- Make it personal and relevant
-- Include a clear call-to-action
-- No generic templates or clichés
-- Don't use "Hope this finds you well" or similar
-- Return only the message text, no subject line or formatting
-
-Generate the message:`;
+Respond with ONLY the message variations, no headings or explanations.`;
 
   return prompt;
 }

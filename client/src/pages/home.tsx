@@ -15,7 +15,7 @@ import { Link } from "wouter";
 import { FreemiumModal } from "@/components/FreemiumModal";
 import { usageTracker } from "@/lib/usage-tracker";
 import { userStore, AppUser } from "@/lib/user-store";
-import { onAuthStateChange, signOutUser, signInWithGoogle, getUserProfile } from "@/lib/firebase";
+import { onAuthStateChange, signOutUser, signInWithGoogle, getUserProfile, handleRedirectResult } from "@/lib/firebase";
 
 interface GenerateDmResponse {
   message: string;
@@ -52,6 +52,13 @@ export default function Home() {
   useEffect(() => {
     const initializeApp = async () => {
       await usageTracker.initialize();
+      
+      // Handle redirect result on page load
+      try {
+        await handleRedirectResult();
+      } catch (error) {
+        console.error("Failed to handle redirect result:", error);
+      }
       
       // Check for upgrade success from URL params
       const urlParams = new URLSearchParams(window.location.search);
