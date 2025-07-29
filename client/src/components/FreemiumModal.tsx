@@ -24,18 +24,20 @@ export function FreemiumModal({ isOpen, onClose, onSuccess }: FreemiumModalProps
     try {
       const user = await signInWithGoogle();
       if (user) {
-        userStore.setFirebaseUser(user);
-        toast({
-          title: "Welcome back!",
-          description: "You now have 10 free DMs per day.",
-        });
+        // Auth state change will handle the user store update and success feedback
         onSuccess();
         onClose();
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Don't show error for cancelled popup (user closed the popup)
+      if (error?.code === 'auth/cancelled-popup-request') {
+        console.log("User cancelled sign-in popup");
+        return;
+      }
+      
       toast({
         title: "Sign-in failed",
-        description: "Please try again.",
+        description: "Please try again or check your internet connection.",
         variant: "destructive",
       });
     } finally {
