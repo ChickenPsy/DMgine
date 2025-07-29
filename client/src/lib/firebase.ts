@@ -15,6 +15,13 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 const provider = new GoogleAuthProvider();
+// Configure OAuth scopes and parameters
+provider.addScope('email');
+provider.addScope('profile');
+provider.setCustomParameters({
+  'hd': undefined, // Allow any domain
+  'prompt': 'select_account'
+});
 
 export interface UserProfile {
   uid: string;
