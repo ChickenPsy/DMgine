@@ -254,66 +254,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <header className="border-b bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-primary">DMgine</h1>
-            <span className="text-sm text-muted-foreground">by AI</span>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {getUsageDisplay()}
-            
-            {user.isAuthenticated ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage 
-                        src={user.profile?.photo || user.firebaseUser?.photoURL || ''} 
-                        alt={user.profile?.name || user.firebaseUser?.displayName || 'User'} 
-                      />
-                      <AvatarFallback>
-                        {(user.profile?.name || user.firebaseUser?.displayName || 'U').charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      <p className="font-medium">{user.profile?.name || user.firebaseUser?.displayName}</p>
-                      <p className="text-xs text-muted-foreground">{user.profile?.email || user.firebaseUser?.email}</p>
-                    </div>
-                  </div>
-                  <DropdownMenuItem asChild>
-                    <Link href="/premium" className="cursor-pointer">
-                      <Crown className="mr-2 h-4 w-4" />
-                      {user.tier === 'premium' ? 'Manage Plan' : 'Upgrade to Premium'}
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button onClick={handleSignIn} variant="default" size="sm">
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign in with Google
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
-      
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Call to action for non-authenticated users */}
+      {/* Main Content - starts immediately */}
+      <main className="container mx-auto px-4 pt-8">
+        {/* Call to action for non-authenticated users with usage counter */}
         {!user.isAuthenticated && (
-          <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg border">
+          <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg border relative">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold mb-2">Sign in for more DMs</h3>
@@ -324,14 +269,60 @@ export default function Home() {
                 Sign in
               </Button>
             </div>
+            {/* Usage counter positioned in bottom-right */}
+            <div className="absolute bottom-4 right-6">
+              {getUsageDisplay()}
+            </div>
+          </div>
+        )}
+        
+        {/* Authenticated user dropdown menu positioned top-right when signed in */}
+        {user.isAuthenticated && (
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-4">
+              {getUsageDisplay()}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage 
+                      src={user.profile?.photo || user.firebaseUser?.photoURL || ''} 
+                      alt={user.profile?.name || user.firebaseUser?.displayName || 'User'} 
+                    />
+                    <AvatarFallback>
+                      {(user.profile?.name || user.firebaseUser?.displayName || 'U').charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex items-center justify-start gap-2 p-2">
+                  <div className="flex flex-col space-y-1 leading-none">
+                    <p className="font-medium">{user.profile?.name || user.firebaseUser?.displayName}</p>
+                    <p className="text-xs text-muted-foreground">{user.profile?.email || user.firebaseUser?.email}</p>
+                  </div>
+                </div>
+                <DropdownMenuItem asChild>
+                  <Link href="/premium" className="cursor-pointer">
+                    <Crown className="mr-2 h-4 w-4" />
+                    {user.tier === 'premium' ? 'Manage Plan' : 'Upgrade to Premium'}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </main>
       
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
+      {/* Hero Content */}
+      <div className="container mx-auto px-4 max-w-6xl">
         {/* Hero Section */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 mt-8">
           <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight mb-8 leading-tight pb-2">
             <span className="gradient-text-dmgine">
               DMgine
@@ -365,11 +356,7 @@ export default function Home() {
             </Link>
           </div>
           
-          {!user.isAuthenticated && (
-            <p className="text-sm text-muted-foreground">
-              {usageTracker.getRemainingFreeUses()} free generations remaining
-            </p>
-          )}
+
         </div>
 
         {/* Smart Personalization Engine */}

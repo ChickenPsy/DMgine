@@ -19,7 +19,6 @@ const provider = new GoogleAuthProvider();
 provider.addScope('email');
 provider.addScope('profile');
 provider.setCustomParameters({
-  'hd': undefined, // Allow any domain
   'prompt': 'select_account'
 });
 
