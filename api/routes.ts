@@ -1,0 +1,191 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { generateDmRequestSchema } from "@shared/schema";
+import { generateDm, buildPersonalizedPrompt, generatePersonalizedDM } from "./services/openai";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Legacy generate endpoint for backward compatibility
+  app.post("/generate", async (req, res) => {
+    try {
+      const validatedData = generateDmRequestSchema.parse(req.body);
+      const isPremium = req.body.isPremium || false;
+      
+      // Determine user tier - default to "Free" if no user object present
+      const userTier = (req as any).user?.tier || "Free";
+      
+      // Check if off the rails mode is requested (mock premium feature)
+      if (validatedData.tone === "chaos" && !isPremium) {
+        return res.status(402).json({ 
+          message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
+          requiresPremium: true 
+        });
+      }
+
+      const generatedMessage = await generateDm({ 
+        ...validatedData, 
+        userTier 
+      });
+      
+      // Return in the exact format specified: { message: string }
+      res.json({ 
+        message: generatedMessage
+      });
+    } catch (error) {
+      console.error("DM generation error:", error);
+      
+      if (error instanceof Error && error.name === "ZodError") {
+        return res.status(400).json({ 
+          message: "Invalid input data",
+          errors: (error as any).errors 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Failed to generate DM. Please try again."
+      });
+    }
+  });
+
+  // Smart personalization endpoint for generate DM
+  app.post("/api/generate-dm", async (req, res) => {
+    try {
+      console.log("Smart personalization DM request received:", req.body);
+      
+      const { 
+        recipientName, 
+        recipientRole, 
+        companyName, 
+        reason, 
+        customHook, 
+        tone, 
+        scenario, 
+        platform,
+        isPremium = false 
+      } = req.body;
+      
+      if (!recipientName || !tone) {
+        return res.status(400).json({ 
+          error: "Missing required fields", 
+          required: ["recipientName", "tone"],
+          success: false
+        });
+      }
+
+      // Check if off the rails mode is requested and user is not premium
+      if (tone === "chaos" && !isPremium) {
+        return res.status(402).json({
+          message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
+          requiresPremium: true,
+          success: false
+        });
+      }
+
+      // Determine user tier for model configuration
+      const userTier: "Free" | "Lite" | "Pro" = isPremium ? "Pro" : "Free";
+      console.log(`Using ${userTier} tier config for smart personalization`);
+
+      // Build dynamic prompt
+      const prompt = buildPersonalizedPrompt({
+        recipientName,
+        recipientRole,
+        companyName,
+        reason,
+        customHook,
+        tone,
+        scenario,
+        platform
+      });
+
+      const generatedMessage = await generatePersonalizedDM(prompt, userTier);
+      
+      res.json({ 
+        message: generatedMessage,
+        success: true 
+      });
+    } catch (error: any) {
+      console.error("Error in /api/generate-dm endpoint:", error);
+      res.status(500).json({ 
+        error: "Failed to generate DM", 
+        message: error.message,
+        success: false 
+      });
+    }
+  });
+
+  // Stripe checkout session endpoint
+  app.post("/api/create-checkout-session", async (req, res) => {
+    try {
+      const { priceId, successUrl, cancelUrl } = req.body;
+      
+      if (!process.env.STRIPE_SECRET_KEY) {
+        throw new Error('Stripe secret key not configured');
+      }
+      
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: 'DMgine Pro',
+                description: 'Unlimited DM generation with all features',
+              },
+              unit_amount: 499, // $4.99 in cents
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          tier: 'pro'
+        }
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error('Stripe checkout error:', error);
+      res.status(500).json({ error: 'Failed to create checkout session' });
+    }
+  });
+
+  // Test endpoint to verify tier configuration (for development/testing)
+  app.get("/api/tier-config/:tier", (req, res) => {
+    const tier = req.params.tier as "Free" | "Lite" | "Pro";
+    
+    if (!["Free", "Lite", "Pro"].includes(tier)) {
+      return res.status(400).json({ error: "Invalid tier. Must be Free, Lite, or Pro" });
+    }
+    
+    // Import the function to test configuration
+    const getModelConfig = (tier: "Free" | "Lite" | "Pro") => {
+      const model = "gpt-4-1106-preview";
+      
+      switch (tier) {
+        case "Pro":
+          return { model, maxTokens: 500 };
+        case "Lite":
+          return { model, maxTokens: 300 };
+        case "Free":
+        default:
+          return { model, maxTokens: 150 };
+      }
+    };
+    
+    const config = getModelConfig(tier);
+    res.json({
+      tier,
+      model: config.model,
+      maxTokens: config.maxTokens,
+      description: `${tier} tier users get ${config.maxTokens} max tokens with ${config.model}`
+    });
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
