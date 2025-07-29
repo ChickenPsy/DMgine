@@ -6,14 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Loader2, Crown, User, LogOut, Zap } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Copy, Loader2, Crown, User, LogOut, Zap, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { FreemiumModal } from "@/components/FreemiumModal";
 import { usageTracker } from "@/lib/usage-tracker";
 import { userStore, AppUser } from "@/lib/user-store";
-import { onAuthStateChange, signOutUser } from "@/lib/firebase";
+import { onAuthStateChange, signOutUser, signInWithGoogle, getUserProfile } from "@/lib/firebase";
 
 interface GenerateDmResponse {
   message: string;
@@ -70,8 +72,14 @@ export default function Home() {
     const unsubscribe = userStore.subscribe(setUser);
 
     // Setup Firebase auth listener
-    const unsubscribeAuth = onAuthStateChange((firebaseUser) => {
-      userStore.setFirebaseUser(firebaseUser);
+    const unsubscribeAuth = onAuthStateChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        // Get user profile from Firestore
+        const profile = await getUserProfile(firebaseUser.uid);
+        userStore.setFirebaseUser(firebaseUser, profile);
+      } else {
+        userStore.signOut();
+      }
     });
 
     return () => {
@@ -184,6 +192,23 @@ export default function Home() {
     }
   };
 
+  const handleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      toast({
+        title: "Welcome! 🎉",
+        description: "You're now signed in with Google.",
+      });
+    } catch (error) {
+      console.error("Sign in error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to sign in. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await signOutUser();
@@ -229,27 +254,70 @@ export default function Home() {
           <div className="flex items-center gap-4">
             {getUsageDisplay()}
             
-            {user.isAuthenticated && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {user.firebaseUser?.displayName || user.firebaseUser?.email}
-                </span>
-                <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-            
-            <Link href="/premium">
-              <Button variant="outline" size="sm">
-                <Crown className="w-4 h-4 mr-2" />
-                Go Premium
+            {user.isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage 
+                        src={user.profile?.photo || user.firebaseUser?.photoURL || ''} 
+                        alt={user.profile?.name || user.firebaseUser?.displayName || 'User'} 
+                      />
+                      <AvatarFallback>
+                        {(user.profile?.name || user.firebaseUser?.displayName || 'U').charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="font-medium">{user.profile?.name || user.firebaseUser?.displayName}</p>
+                      <p className="text-xs text-muted-foreground">{user.profile?.email || user.firebaseUser?.email}</p>
+                    </div>
+                  </div>
+                  <DropdownMenuItem asChild>
+                    <Link href="/premium" className="cursor-pointer">
+                      <Crown className="mr-2 h-4 w-4" />
+                      {user.tier === 'premium' ? 'Manage Plan' : 'Upgrade to Premium'}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={handleSignIn} variant="default" size="sm">
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign in with Google
               </Button>
-            </Link>
+            )}
           </div>
         </div>
       </header>
-
+      
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-8">
+        {/* Call to action for non-authenticated users */}
+        {!user.isAuthenticated && (
+          <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg border">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Sign in for more DMs</h3>
+                <p className="text-sm text-muted-foreground">Get 10 DMs per day when you sign in with Google</p>
+              </div>
+              <Button onClick={handleSignIn} variant="default">
+                <LogIn className="w-4 h-4 mr-2" />
+                Sign in
+              </Button>
+            </div>
+          </div>
+        )}
+      </main>
+      
+      {/* Main Content */}
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Hero Section */}
         <div className="text-center mb-16">

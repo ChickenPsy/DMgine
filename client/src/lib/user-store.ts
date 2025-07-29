@@ -1,9 +1,11 @@
 import { User } from "firebase/auth";
+import { UserProfile } from "./firebase";
 
 export type UserTier = 'free' | 'premium';
 
 export interface AppUser {
   firebaseUser: User | null;
+  profile: UserProfile | null;
   tier: UserTier;
   isAuthenticated: boolean;
 }
@@ -14,6 +16,7 @@ export class UserStore {
   private static instance: UserStore;
   private user: AppUser = {
     firebaseUser: null,
+    profile: null,
     tier: 'free',
     isAuthenticated: false
   };
@@ -38,9 +41,18 @@ export class UserStore {
     return { ...this.user };
   }
 
-  setFirebaseUser(firebaseUser: User | null): void {
+  setFirebaseUser(firebaseUser: User | null, profile: UserProfile | null = null): void {
     this.user.firebaseUser = firebaseUser;
+    this.user.profile = profile;
     this.user.isAuthenticated = !!firebaseUser;
+    
+    // Update tier based on profile premium status
+    if (profile?.isPremium) {
+      this.user.tier = 'premium';
+    } else {
+      this.user.tier = 'free';
+    }
+    
     this.notifyListeners();
   }
 
@@ -75,8 +87,9 @@ export class UserStore {
 
   signOut(): void {
     this.user.firebaseUser = null;
+    this.user.profile = null;
     this.user.isAuthenticated = false;
-    // Keep tier as it might be premium (paid)
+    this.user.tier = 'free';
     this.notifyListeners();
   }
 }

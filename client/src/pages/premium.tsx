@@ -1,30 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check, ArrowLeft, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { userStore, AppUser } from "@/lib/user-store";
+import { updateUserPremiumStatus } from "@/lib/firebase";
 
 export default function Premium() {
   const [isUpgrading, setIsUpgrading] = useState(false);
-  const [isUpgraded, setIsUpgraded] = useState(false);
+  const [user, setUser] = useState<AppUser>(userStore.getUser());
   const { toast } = useToast();
 
+  useEffect(() => {
+    const unsubscribe = userStore.subscribe(setUser);
+    return unsubscribe;
+  }, []);
+
   const handleUpgrade = async () => {
+    if (!user.isAuthenticated) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in with Google to upgrade to Premium.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUpgrading(true);
     
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      // Update user premium status in Firestore
+      await updateUserPremiumStatus(user.firebaseUser!.uid, true);
+      
+      // Update local user store
+      userStore.upgradeToPremium();
+      
       setIsUpgrading(false);
-      setIsUpgraded(true);
       toast({
-        title: "Welcome to Premium!",
+        title: "Welcome to Premium! 🎉",
         description: "Your upgrade was successful. Off the Rails Mode is now unlocked!",
       });
-      
-      // In a real app, this would update user state/database
-      localStorage.setItem('dmgine_premium', 'true');
-    }, 2000);
+    } catch (error) {
+      setIsUpgrading(false);
+      toast({
+        title: "Upgrade failed",
+        description: "Please try again or contact support.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -50,15 +74,31 @@ export default function Premium() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-12">
-          <h2 className="text-5xl md:text-6xl font-black text-slate-800 mb-6 leading-tight">
-            Upgrade to{" "}
-            <span className="bg-gradient-to-r from-purple-500 to-indigo-600 bg-clip-text text-transparent">
-              Premium
-            </span>
-          </h2>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            Unlock Off the Rails Mode, Remove Ads, and Access Your DM History
-          </p>
+          {user.tier === 'premium' ? (
+            <div>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Crown className="h-12 w-12 text-amber-500" />
+                <h2 className="text-5xl md:text-6xl font-black text-slate-800 leading-tight">
+                  You're <span className="bg-gradient-to-r from-amber-500 to-yellow-600 bg-clip-text text-transparent">Premium!</span>
+                </h2>
+              </div>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                Enjoy unlimited DM generation and Off the Rails Mode access.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <h2 className="text-5xl md:text-6xl font-black text-slate-800 mb-6 leading-tight">
+                Upgrade to{" "}
+                <span className="bg-gradient-to-r from-purple-500 to-indigo-600 bg-clip-text text-transparent">
+                  Premium
+                </span>
+              </h2>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                Unlock Off the Rails Mode, Remove Ads, and Access Your DM History
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 mb-12">
@@ -109,7 +149,7 @@ export default function Premium() {
                 </div>
               </div>
 
-              {isUpgraded ? (
+              {user.tier === 'premium' ? (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Check className="h-8 w-8 text-white" />
