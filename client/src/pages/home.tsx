@@ -199,11 +199,15 @@ export default function Home() {
         title: "Welcome! 🎉",
         description: "You're now signed in with Google.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign in error:", error);
+      
+      // Show more specific error messages
+      const errorMessage = error.message || "Failed to sign in. Please try again.";
+      
       toast({
-        title: "Error",
-        description: "Failed to sign in. Please try again.",
+        title: "Sign In Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     }

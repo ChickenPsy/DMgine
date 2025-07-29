@@ -27,15 +27,40 @@ export interface UserProfile {
 
 export const signInWithGoogle = async (): Promise<User> => {
   try {
+    console.log("Firebase config check:", {
+      apiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
+      projectId: !!import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      appId: !!import.meta.env.VITE_FIREBASE_APP_ID,
+    });
+
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
+    
+    console.log("Sign-in successful:", user.email);
     
     // Create or update user profile in Firestore
     await createOrUpdateUserProfile(user);
     
     return user;
-  } catch (error) {
-    console.error("Error signing in with Google:", error);
+  } catch (error: any) {
+    console.error("Detailed sign-in error:", {
+      code: error.code,
+      message: error.message,
+      customData: error.customData,
+      stack: error.stack
+    });
+    
+    // Handle specific Firebase auth errors
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error('Popup was blocked. Please allow popups for this site and try again.');
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      throw new Error('Sign-in was cancelled. Please try again.');
+    } else if (error.code === 'auth/unauthorized-domain') {
+      throw new Error('This domain is not authorized for Google sign-in.');
+    } else if (error.code === 'auth/operation-not-allowed') {
+      throw new Error('Google sign-in is not enabled for this project.');
+    }
+    
     throw error;
   }
 };
