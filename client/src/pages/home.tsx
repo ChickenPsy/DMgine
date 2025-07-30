@@ -337,8 +337,8 @@ export default function Home() {
       {/* Hero Content */}
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Hero Section */}
-        <div className="text-center mb-12 mt-8">
-          <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight mb-8 leading-tight pb-2">
+        <div className="text-center mb-12 mt-8 overflow-visible">
+          <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight mb-8 leading-normal pb-4">
             <span className="gradient-text-dmgine">
               DMgine
             </span>

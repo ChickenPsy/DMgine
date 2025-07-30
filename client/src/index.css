@@ -77,6 +77,8 @@
   background-clip: text;
   display: inline-block;
   letter-spacing: -0.02em;
+  line-height: 1.1;
+  padding-bottom: 0.1em;
 }
 
 /* Custom button styles for gradients */
