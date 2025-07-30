@@ -139,6 +139,7 @@ export interface PersonalizationData {
   tone: string;
   scenario?: string;
   platform?: string;
+  language?: string;
 }
 
 export function buildPersonalizedPrompt(data: PersonalizationData): string {
@@ -150,7 +151,8 @@ export function buildPersonalizedPrompt(data: PersonalizationData): string {
     customHook,
     tone,
     scenario,
-    platform
+    platform,
+    language = "English"
   } = data;
 
   // Map tone to message tone values
@@ -160,6 +162,10 @@ export function buildPersonalizedPrompt(data: PersonalizationData): string {
 
   // Map scenario to scenario type
   const scenarioType = scenario || "cold outreach";
+
+  // Build language instruction
+  const languageInstruction = language === "English" ? "" : 
+    `\n\nIMPORTANT: Write the entire message in ${language}. Use natural, native-level ${language} with appropriate cultural context and communication style for that language.`;
 
   // Use the improved prompt structure
   const prompt = `You're a world-class cold outreach copywriter. 
@@ -176,7 +182,7 @@ Write 3 variations that:
 3. Stay within the platform's message limits (e.g. Twitter/LinkedIn DMs = ~280 characters)
 4. Avoid fluff like "Hope this finds you well"
 5. Spark curiosity, tease value, or prompt a response — don't explain everything
-6. Respect the tone. If tone is "Off the Rails", get weird, bold, or chaotic. If it's "Professional", stay crisp but not boring.
+6. Respect the tone. If tone is "Off the Rails", get weird, bold, or chaotic. If it's "Professional", stay crisp but not boring.${languageInstruction}
 
 Respond with ONLY the message variations, no headings or explanations.`;
 

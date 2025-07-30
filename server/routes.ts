@@ -16,6 +16,7 @@ const personalizedDmRequestSchema = z.object({
   tone: z.enum(["professional", "casual", "chaos"]),
   scenario: z.string().max(200).trim().optional(),
   platform: z.string().max(50).trim().optional(),
+  language: z.enum(["English", "Portuguese", "Spanish", "Japanese", "French", "German", "Italian", "Korean", "Chinese"]).default("English"),
   isPremium: z.boolean().default(false)
 });
 
@@ -118,6 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customHook: validatedData.customHook ? sanitizeInput(validatedData.customHook) : undefined,
         scenario: validatedData.scenario ? sanitizeInput(validatedData.scenario) : undefined,
         platform: validatedData.platform ? sanitizeInput(validatedData.platform) : undefined,
+        language: validatedData.language, // Language is enum, no need to sanitize
       };
 
       // Check if off the rails mode is requested and user is not premium
@@ -142,7 +144,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customHook: sanitizedData.customHook,
         tone: sanitizedData.tone,
         scenario: sanitizedData.scenario,
-        platform: sanitizedData.platform
+        platform: sanitizedData.platform,
+        language: sanitizedData.language
       });
 
       const generatedMessage = await generatePersonalizedDM(prompt, userTier);

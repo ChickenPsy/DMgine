@@ -45,6 +45,7 @@ export default function Home() {
   const [optionalHook, setOptionalHook] = useState("");
   const [useCase, setUseCase] = useState("");
   const [platform, setPlatform] = useState("");
+  const [language, setLanguage] = useState("English"); // Default to English
   const [isSigningIn, setIsSigningIn] = useState(false);
   
   const { toast } = useToast();
@@ -119,6 +120,7 @@ export default function Home() {
         tone,
         scenario: useCase,
         platform,
+        language,
         isPremium: user.tier === 'premium'
       };
       
@@ -541,6 +543,28 @@ export default function Home() {
                       <SelectItem value="email">📧 Email</SelectItem>
                       <SelectItem value="twitter">🐦 Twitter</SelectItem>
                       <SelectItem value="instagram">📸 Instagram</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="language" className="text-sm font-medium">
+                    Language
+                  </Label>
+                  <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="rounded-lg">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="English">English</SelectItem>
+                      <SelectItem value="Portuguese">Portuguese</SelectItem>
+                      <SelectItem value="Spanish">Spanish</SelectItem>
+                      <SelectItem value="Japanese">Japanese</SelectItem>
+                      <SelectItem value="French">French</SelectItem>
+                      <SelectItem value="German">German</SelectItem>
+                      <SelectItem value="Italian">Italian</SelectItem>
+                      <SelectItem value="Korean">Korean</SelectItem>
+                      <SelectItem value="Chinese">Chinese</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
