@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import session from "express-session";
+import csrf from "csurf";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { validateEnvironmentSecurity, sanitizeErrorForClient } from "./security-check";
@@ -34,7 +35,7 @@ app.use(helmet({
 // CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.REPLIT_DEV_DOMAIN, /\.replit\.app$/] 
+    ? [process.env.REPLIT_DEV_DOMAIN || '', /\.replit\.app$/].filter(Boolean)
     : ['http://localhost:5173', 'http://localhost:5000'],
   credentials: true,
   optionsSuccessStatus: 200
@@ -74,6 +75,36 @@ app.use(session({
   },
   rolling: true // Reset expiration on each request
 }));
+
+// CSRF protection for authenticated routes
+const csrfProtection = csrf({ 
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+  }
+});
+
+// Apply CSRF protection to POST/PUT/DELETE routes (excluding GET)
+app.use((req, res, next) => {
+  // Skip CSRF for GET requests and health checks
+  if (req.method === 'GET' || req.path === '/health') {
+    return next();
+  }
+  // Apply CSRF protection to state-changing requests
+  return csrfProtection(req, res, next);
+});
+
+// CSRF token endpoint for frontend to fetch token
+app.get('/api/csrf-token', (req, res) => {
+  // Apply CSRF protection to generate token
+  csrfProtection(req, res, () => {
+    res.json({ 
+      csrfToken: (req as any).csrfToken(),
+      success: true 
+    });
+  });
+});
 
 app.use((req, res, next) => {
   const start = Date.now();

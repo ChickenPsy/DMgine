@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
 import { generateDmRequestSchema } from "@shared/schema";
-import { generateDm, buildPersonalizedPrompt, generatePersonalizedDM } from "./services/openai";
+import { generateDm, generateDmStream, buildPersonalizedPrompt, generatePersonalizedDM } from "./services/openai";
 import { sanitizeErrorForClient } from "./security-check";
 
 // Input validation schemas
@@ -29,11 +29,12 @@ const sanitizeInput = (input: string): string => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Legacy generate endpoint for backward compatibility
+  // Legacy generate endpoint for backward compatibility with optional streaming
   app.post("/generate", async (req, res) => {
     try {
       const validatedData = generateDmRequestSchema.parse(req.body);
       const isPremium = req.body.isPremium || false;
+      const isStreamingRequested = req.headers.accept?.includes('text/stream') || req.query.stream === 'true';
       
       // Determine user tier - default to "Free" if no user object present
       const userTier = (req as any).user?.tier || "Free";
@@ -46,15 +47,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const generatedMessage = await generateDm({ 
-        ...validatedData, 
-        userTier 
-      });
-      
-      // Return in the exact format specified: { message: string }
-      res.json({ 
-        message: generatedMessage
-      });
+      if (isStreamingRequested) {
+        // Set up streaming response for real-time generation
+        res.writeHead(200, {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Transfer-Encoding': 'chunked',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive'
+        });
+
+        try {
+          const stream = await generateDmStream({
+            ...validatedData,
+            userTier
+          });
+
+          for await (const chunk of stream) {
+            res.write(chunk); // Stream each chunk to client in real-time
+          }
+          
+          res.end(); // Close the stream
+        } catch (streamError) {
+          console.error("Streaming error:", streamError);
+          res.write(`\n\nError: ${sanitizeErrorForClient(streamError)}`);
+          res.end();
+        }
+      } else {
+        // Standard non-streaming response
+        const generatedMessage = await generateDm({ 
+          ...validatedData, 
+          userTier 
+        });
+        
+        // Return in the exact format specified: { message: string }
+        res.json({ 
+          message: generatedMessage
+        });
+      }
     } catch (error) {
       console.error("DM generation error:", error);
       

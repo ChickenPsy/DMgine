@@ -2,7 +2,16 @@
 
 ## Overview
 
-This is a modern React-based web application that generates personalized direct messages using AI. The application allows users to input a target person and select a tone (professional, flirty, or chaos) to generate customized DMs. Built with a modern full-stack architecture using React, Express, and PostgreSQL with Drizzle ORM.
+This is a modern React-based web application that generates personalized direct messages using AI. The application allows users to input a target person and select a tone (professional, casual, or chaos) to generate customized DMs. Built with a modern full-stack architecture using React, Express, and PostgreSQL with Drizzle ORM.
+
+## Recent Updates (January 2025)
+
+✓ **Production Security Hardening**: Added comprehensive security measures including CORS protection, helmet middleware, rate limiting (10 req/min), and Zod input validation
+✓ **Bundle Optimization**: Removed 17 unused Radix UI packages to reduce build size
+✓ **OpenAI Streaming**: Implemented real-time streaming responses for faster AI generation perception
+✓ **CSRF Protection**: Added csurf middleware with cookie-based double-submit pattern for all authenticated routes
+✓ **TypeScript Strict Mode**: Enabled full strict mode with forceConsistentCasingInFileNames and noImplicitOverride
+✓ **Security Validation**: Added startup environment variable validation and error sanitization
 
 ## User Preferences
 
