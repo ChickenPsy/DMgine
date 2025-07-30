@@ -52,12 +52,12 @@ export default function Premium() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
       <header className="w-full py-6 px-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <Link href="/">
-            <Button variant="ghost" className="text-slate-600 hover:text-slate-800 font-medium flex items-center space-x-2">
+            <Button variant="ghost" className="text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100 font-medium flex items-center space-x-2">
               <ArrowLeft className="h-4 w-4" />
               <span>Back to DMgine</span>
             </Button>
@@ -66,7 +66,7 @@ export default function Premium() {
             <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-lg">DM</span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-800">gine.com</h1>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">gine.com</h1>
           </div>
         </div>
       </header>
@@ -78,23 +78,23 @@ export default function Premium() {
             <div>
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Crown className="h-12 w-12 text-amber-500" />
-                <h2 className="text-5xl md:text-6xl font-black text-slate-800 leading-tight">
+                <h2 className="text-5xl md:text-6xl font-black text-slate-800 dark:text-slate-100 leading-tight">
                   You're <span className="bg-gradient-to-r from-amber-500 to-yellow-600 bg-clip-text text-transparent">Premium!</span>
                 </h2>
               </div>
-              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
                 Enjoy unlimited DM generation and Off the Rails Mode access.
               </p>
             </div>
           ) : (
             <div>
-              <h2 className="text-5xl md:text-6xl font-black text-slate-800 mb-6 leading-tight">
+              <h2 className="text-5xl md:text-6xl font-black text-slate-800 dark:text-slate-100 mb-6 leading-tight">
                 Upgrade to{" "}
                 <span className="bg-gradient-to-r from-purple-500 to-indigo-600 bg-clip-text text-transparent">
                   Premium
                 </span>
               </h2>
-              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
                 Unlock Off the Rails Mode, Remove Ads, and Access Your DM History
               </p>
             </div>
@@ -103,49 +103,49 @@ export default function Premium() {
 
         <div className="grid md:grid-cols-2 gap-8 mb-12">
           {/* Benefits Section */}
-          <Card className="bg-white rounded-2xl shadow-xl border border-slate-200">
+          <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-slate-200 dark:border-gray-700">
             <CardContent className="p-8">
-              <h3 className="text-2xl font-bold text-slate-800 mb-6">Premium Benefits</h3>
+              <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-6">Premium Benefits</h3>
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-slate-700 font-medium">Access to Off the Rails Mode</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">Access to Off the Rails Mode</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-slate-700 font-medium">No ads, clean interface</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">No ads, clean interface</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-slate-700 font-medium">Save & revisit your DM history</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">Save & revisit your DM history</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-slate-700 font-medium">Premium badge on your profile</span>
+                  <span className="text-slate-700 dark:text-slate-300 font-medium">Premium badge on your profile</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Pricing Section */}
-          <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-xl border-2 border-purple-200">
+          <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-2xl shadow-xl border-2 border-purple-200 dark:border-purple-700">
             <CardContent className="p-8">
               <div className="text-center mb-6">
-                <div className="bg-purple-100 text-purple-800 text-sm font-bold px-3 py-1 rounded-full inline-block mb-4">
+                <div className="bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100 text-sm font-bold px-3 py-1 rounded-full inline-block mb-4">
                   Most Popular
                 </div>
-                <h3 className="text-3xl font-bold text-slate-800 mb-2">Premium Plan</h3>
+                <h3 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">Premium Plan</h3>
                 <div className="flex items-center justify-center space-x-2">
-                  <span className="text-4xl font-black text-slate-800">$7</span>
-                  <span className="text-slate-600 font-medium">/month</span>
+                  <span className="text-4xl font-black text-slate-800 dark:text-slate-100">$7</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">/month</span>
                 </div>
               </div>
 
@@ -154,8 +154,8 @@ export default function Premium() {
                   <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Check className="h-8 w-8 text-white" />
                   </div>
-                  <h4 className="text-xl font-bold text-slate-800 mb-2">You're Premium!</h4>
-                  <p className="text-slate-600 mb-6">Welcome to the premium experience</p>
+                  <h4 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">You're Premium!</h4>
+                  <p className="text-slate-600 dark:text-slate-300 mb-6">Welcome to the premium experience</p>
                   <Link href="/">
                     <Button className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold py-3 px-6 rounded-xl hover:shadow-lg transition-all duration-200">
                       Start Creating Epic DMs
@@ -172,7 +172,7 @@ export default function Premium() {
                 </Button>
               )}
 
-              <p className="text-xs text-slate-500 text-center mt-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
                 Cancel anytime. No commitment required.
               </p>
             </CardContent>
@@ -180,22 +180,22 @@ export default function Premium() {
         </div>
 
         {/* Feature Preview */}
-        <Card className="bg-white rounded-2xl shadow-xl border border-slate-200 mb-12">
+        <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-slate-200 dark:border-gray-700 mb-12">
           <CardContent className="p-8">
-            <h3 className="text-3xl font-bold text-slate-800 text-center mb-8">
+            <h3 className="text-3xl font-bold text-slate-800 dark:text-slate-100 text-center mb-8">
               What You Get with Off the Rails Mode
             </h3>
-            <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-6">
-              <h4 className="font-bold text-slate-700 mb-3">Sample Off the Rails Message:</h4>
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded">
-                <p className="text-slate-700 italic leading-relaxed">
+            <div className="bg-slate-50 dark:bg-gray-700 border-2 border-slate-200 dark:border-gray-600 rounded-xl p-6">
+              <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3">Sample Off the Rails Message:</h4>
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-l-4 border-yellow-400 p-4 rounded">
+                <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed">
                   "Listen up, future business partner in crime! I've been professionally stalking your LinkedIn 
                   (totally normal, right?) and I'm convinced we need to collaborate before the robots take over 
                   our jobs. Your recent post about AI in marketing had me nodding so hard I probably looked like 
                   a bobblehead. Want to grab coffee and plot world domination... I mean, discuss synergies?"
                 </p>
               </div>
-              <p className="text-sm text-slate-500 mt-3">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">
                 Off the Rails Mode creates wildly entertaining messages that break the rules but somehow work perfectly.
               </p>
             </div>
@@ -204,9 +204,9 @@ export default function Premium() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-800 text-white py-8 px-4">
+      <footer className="bg-slate-800 dark:bg-gray-900 text-white py-8 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-slate-400 text-lg font-medium">
+          <p className="text-slate-400 dark:text-slate-300 text-lg font-medium">
             Written by DMgine.com – Direct Messaging, Engineered.
           </p>
         </div>
