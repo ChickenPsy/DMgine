@@ -13,9 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 import { FreemiumModal } from "@/components/FreemiumModal";
+import { AuthModal } from "@/components/AuthModal";
 import { usageTracker } from "@/lib/usage-tracker";
 import { userStore, AppUser } from "@/lib/user-store";
-import { onAuthStateChange, signOutUser, signInWithGoogle, getUserProfile, handleRedirectResult } from "@/lib/firebase";
+import { onAuthStateChange, signOutUser, signInWithEmail, signUpWithEmail, getUserProfile, handleRedirectResult } from "@/lib/firebase";
 
 interface GenerateDmResponse {
   message: string;
@@ -202,37 +203,18 @@ export default function Home() {
     }
   };
 
-  const handleSignIn = async () => {
-    if (isSigningIn) return; // Prevent double-click
-    
-    setIsSigningIn(true);
-    try {
-      await signInWithGoogle();
-      toast({
-        title: "Welcome! 🎉",
-        description: "You're now signed in and ready to generate unlimited DMs.",
-      });
-    } catch (error: any) {
-      console.error("Sign in error:", error);
-      
-      // Better error handling for Replit environment
-      let errorMessage = "Please try again.";
-      if (error.message.includes("popup")) {
-        errorMessage = "Please allow popups in your browser and try again.";
-      } else if (error.message.includes("network")) {
-        errorMessage = "Please check your internet connection and try again.";
-      } else if (error.message.includes("unauthorized-domain")) {
-        errorMessage = "This domain is not authorized. Please contact support.";
-      }
-      
-      toast({
-        title: "Sign in failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSigningIn(false);
-    }
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleSignIn = () => {
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    toast({
+      title: "Welcome! 🎉",
+      description: "You're now signed in and ready to generate unlimited DMs.",
+    });
   };
 
   const handleSignOut = async () => {
@@ -650,6 +632,13 @@ export default function Home() {
             generateMutation.mutate({ target, tone });
           }
         }}
+      />
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        defaultMode="signin"
       />
     </div>
   );

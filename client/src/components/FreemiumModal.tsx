@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { signInWithGoogle } from "@/lib/firebase";
+import { signInWithEmail, signUpWithEmail } from "@/lib/firebase";
 import { userStore } from "@/lib/user-store";
 import { usageTracker } from "@/lib/usage-tracker";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Zap, CheckCircle2 } from "lucide-react";
 import { handleUpgradeToPremium as handleUpgrade } from "@/lib/upgrade-handler";
+import { AuthModal } from "@/components/AuthModal";
 
 interface FreemiumModalProps {
   isOpen: boolean;
@@ -20,28 +21,20 @@ export function FreemiumModal({ isOpen, onClose, onSuccess }: FreemiumModalProps
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const { toast } = useToast();
 
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const user = await signInWithGoogle();
-      if (user) {
-        userStore.setFirebaseUser(user);
-        toast({
-          title: "Welcome back!",
-          description: "You now have 10 free DMs per day.",
-        });
-        onSuccess();
-        onClose();
-      }
-    } catch (error) {
-      toast({
-        title: "Sign-in failed",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleSignIn = () => {
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    toast({
+      title: "Welcome back!",
+      description: "You now have 10 free DMs per day.",
+    });
+    onSuccess();
+    onClose();
   };
 
   const handleUpgradeToPremium = async () => {
@@ -83,16 +76,16 @@ export function FreemiumModal({ isOpen, onClose, onSuccess }: FreemiumModalProps
               <Zap className="h-5 w-5 text-blue-500" />
               <div className="flex-1">
                 <h3 className="font-semibold">Continue Free</h3>
-                <p className="text-sm text-muted-foreground">10 DMs per day with Google sign-in</p>
+                <p className="text-sm text-muted-foreground">10 DMs per day with sign-in</p>
               </div>
             </div>
             <Button 
-              onClick={handleGoogleSignIn}
+              onClick={handleSignIn}
               disabled={isLoading || isProcessingPayment}
               className="w-full"
               variant="outline"
             >
-              {isLoading ? "Signing in..." : "Sign in with Google"}
+              Sign In / Sign Up
             </Button>
           </Card>
 
@@ -139,6 +132,14 @@ export function FreemiumModal({ isOpen, onClose, onSuccess }: FreemiumModalProps
           No strings attached. Cancel anytime. 
         </div>
       </DialogContent>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        defaultMode="signin"
+      />
     </Dialog>
   );
 }

@@ -1,4 +1,4 @@
-import { signInWithGoogle } from './firebase';
+import { signInWithEmail } from './firebase';
 import { userStore } from './user-store';
 
 export interface UpgradeHandlerOptions {
@@ -20,31 +20,11 @@ export const handleUpgradeToPremium = async (options: UpgradeHandlerOptions = {}
     
     const currentUser = userStore.getUser();
     
-    // If user is not authenticated, sign them in first
+    // If user is not authenticated, they need to sign in first
     if (!currentUser.isAuthenticated) {
-      try {
-        const firebaseUser = await signInWithGoogle();
-        if (firebaseUser) {
-          // Update user store with Firebase user
-          userStore.setFirebaseUser(firebaseUser);
-          // Small delay to ensure state is updated
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      } catch (signInError: any) {
-        onLoadingChange?.(false);
-        
-        // Handle specific sign-in errors
-        if (signInError.message.includes('cancelled') || signInError.message.includes('closed-by-user')) {
-          onError?.('Sign-in was cancelled. Please try again to upgrade to Premium.');
-          return;
-        } else if (signInError.message.includes('blocked')) {
-          onError?.('Popup was blocked. Please allow popups and try again.');
-          return;
-        } else {
-          onError?.('Failed to sign in. Please try again.');
-          return;
-        }
-      }
+      onLoadingChange?.(false);
+      onError?.('Please sign in first to upgrade to Premium.');
+      return;
     }
     
     // Now redirect to Stripe checkout

@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, setPersistence, browserLocalPersistence, updateProfile, sendPasswordResetEmail } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc, enableNetwork } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -39,14 +39,7 @@ enableNetwork(db).catch((error) => {
   console.warn("Failed to enable Firestore network:", error);
 });
 
-const provider = new GoogleAuthProvider();
-// Configure OAuth scopes and parameters
-provider.addScope('email');
-provider.addScope('profile');
-// Optimize for Replit environment - remove custom parameters that might cause issues
-// provider.setCustomParameters({
-//   'prompt': 'consent'
-// });
+// Email/Password Authentication - No provider needed
 
 export interface UserProfile {
   uid: string;
@@ -57,14 +50,13 @@ export interface UserProfile {
   createdAt: string;
 }
 
-export const signInWithGoogle = async (): Promise<User> => {
+export const signUpWithEmail = async (email: string, password: string, displayName?: string): Promise<User> => {
   try {
     console.log("Firebase config check:", {
       apiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
       projectId: !!import.meta.env.VITE_FIREBASE_PROJECT_ID,
       appId: !!import.meta.env.VITE_FIREBASE_APP_ID,
-      authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-      currentDomain: window.location.hostname
+      authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`
     });
 
     // Check if Firebase is properly configured
@@ -72,10 +64,53 @@ export const signInWithGoogle = async (): Promise<User> => {
       throw new Error('Firebase configuration is missing. Please set VITE_FIREBASE_* environment variables.');
     }
 
-    console.log("Starting Google sign-in with popup...");
+    console.log("Creating account with email:", email);
     
-    // Use popup method optimized for Replit environment
-    const result = await signInWithPopup(auth, provider);
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    const user = result.user;
+    
+    // Update display name if provided
+    if (displayName) {
+      await updateProfile(user, { displayName });
+    }
+    
+    console.log("Account created successfully:", user.email);
+    
+    // Create or update user profile in Firestore
+    await createOrUpdateUserProfile(user);
+    
+    return user;
+  } catch (error: any) {
+    console.error("Detailed sign-up error:", {
+      code: error.code,
+      message: error.message,
+      stack: error.stack
+    });
+    
+    // Handle specific Firebase auth errors with better messaging
+    if (error.code === 'auth/email-already-in-use') {
+      throw new Error('This email is already registered. Please sign in instead.');
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error('Please enter a valid email address.');
+    } else if (error.code === 'auth/weak-password') {
+      throw new Error('Password should be at least 6 characters long.');
+    } else if (error.code === 'auth/operation-not-allowed') {
+      throw new Error('Email/password authentication is not enabled for this project.');
+    } else if (error.code === 'auth/invalid-api-key') {
+      throw new Error('Invalid Firebase API key. Please check your configuration.');
+    } else if (error.message.includes('Firebase configuration')) {
+      throw new Error('Firebase is not properly configured. Please check environment variables.');
+    }
+    
+    throw error;
+  }
+};
+
+export const signInWithEmail = async (email: string, password: string): Promise<User> => {
+  try {
+    console.log("Signing in with email:", email);
+    
+    const result = await signInWithEmailAndPassword(auth, email, password);
     const user = result.user;
     
     console.log("Sign-in successful:", user.email);
@@ -88,26 +123,37 @@ export const signInWithGoogle = async (): Promise<User> => {
     console.error("Detailed sign-in error:", {
       code: error.code,
       message: error.message,
-      customData: error.customData,
       stack: error.stack
     });
     
     // Handle specific Firebase auth errors with better messaging
-    if (error.code === 'auth/popup-blocked') {
-      throw new Error('Popup was blocked by your browser. Please allow popups for this site and try again.');
-    } else if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error('Sign-in was cancelled. Please try again.');
-    } else if (error.code === 'auth/cancelled-popup-request') {
-      throw new Error('Another sign-in attempt is in progress. Please wait and try again.');
-    } else if (error.code === 'auth/unauthorized-domain') {
-      const currentDomain = window.location.hostname;
-      throw new Error(`This domain (${currentDomain}) is not authorized for Google sign-in. Please add "${currentDomain}" to your Firebase Console > Authentication > Settings > Authorized domains.`);
-    } else if (error.code === 'auth/operation-not-allowed') {
-      throw new Error('Google sign-in is not enabled for this project.');
-    } else if (error.code === 'auth/invalid-api-key') {
-      throw new Error('Invalid Firebase API key. Please check your configuration.');
-    } else if (error.message.includes('Firebase configuration')) {
-      throw new Error('Firebase is not properly configured. Please check environment variables.');
+    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+      throw new Error('Invalid email or password. Please check your credentials.');
+    } else if (error.code === 'auth/user-not-found') {
+      throw new Error('No account found with this email. Please sign up first.');
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error('Please enter a valid email address.');
+    } else if (error.code === 'auth/user-disabled') {
+      throw new Error('This account has been disabled. Please contact support.');
+    } else if (error.code === 'auth/too-many-requests') {
+      throw new Error('Too many failed attempts. Please try again later.');
+    }
+    
+    throw error;
+  }
+};
+
+export const resetPassword = async (email: string): Promise<void> => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    console.log("Password reset email sent to:", email);
+  } catch (error: any) {
+    console.error("Password reset error:", error);
+    
+    if (error.code === 'auth/user-not-found') {
+      throw new Error('No account found with this email address.');
+    } else if (error.code === 'auth/invalid-email') {
+      throw new Error('Please enter a valid email address.');
     }
     
     throw error;
@@ -151,9 +197,9 @@ export const createOrUpdateUserProfile = async (user: User): Promise<UserProfile
     
     const userData: UserProfile = {
       uid: user.uid,
-      name: user.displayName || '',
+      name: user.displayName || user.email?.split('@')[0] || '',
       email: user.email || '',
-      photo: user.photoURL || '',
+      photo: '', // No photo for email/password auth
       isPremium: userDoc.exists() ? userDoc.data().isPremium || false : false,
       createdAt: userDoc.exists() ? userDoc.data().createdAt : new Date().toISOString(),
     };
