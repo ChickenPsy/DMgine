@@ -16,6 +16,8 @@ This is a modern React-based web application that generates personalized direct 
 ✓ **Session Store Optimization**: Configured PostgreSQL session store for production with memory store fallback for development to prevent memory leaks
 ✓ **Content Security Policy**: Updated CSP with wildcard domain patterns for Firebase services including 'unsafe-inline'/'unsafe-eval' for full authentication compatibility
 ✓ **Dark Mode Theme**: Added ThemeProvider with dark mode enabled by default for comfortable viewing experience
+✓ **Multi-Language Support**: Added language dropdown with 9 language options for AI-generated content localization
+✓ **Enhanced Tone Selection**: Implemented comprehensive tone system with 13 personality modes including 4 premium tones (Bold & Cocky, Flirty & Playful, Chaotic Evil, Whisper Mode)
 
 ## User Preferences
 
@@ -63,7 +65,10 @@ Preferred communication style: Simple, everyday language.
   - Free tier: 150 max tokens
   - Lite tier: 300 max tokens  
   - Premium tier: 500 max tokens (unlimited effectively)
-- **Prompt Engineering**: Specialized prompts for different tones (professional, casual, off-the-rails)
+- **Advanced Tone System**: 13 specialized prompt templates for different personality modes:
+  - Standard: Professional, Friendly, Direct, Empathetic, Assertive
+  - Advanced: Funny & Weird, Curious & Intrigued, Fanboy Mode, Apologetic  
+  - Premium: Bold & Cocky, Flirty & Playful, Chaotic Evil, Whisper Mode
 - **Error Handling**: Graceful fallbacks and user feedback
 
 ### UI Components

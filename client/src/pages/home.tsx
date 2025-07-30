@@ -488,13 +488,31 @@ export default function Home() {
                       <SelectValue placeholder="Select tone" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="friendly">Friendly</SelectItem>
-                      <SelectItem value="direct">Direct</SelectItem>
-                      <SelectItem value="empathetic">Empathetic</SelectItem>
-                      <SelectItem value="assertive">Assertive</SelectItem>
-                      <SelectItem value="chaos" disabled={user.tier !== 'premium'}>
-                        🚂 Off the Rails Mode {user.tier !== 'premium' && '(Premium only)'}
+                      {/* Standard Tones */}
+                      <SelectItem value="professional">🧑‍💼 Professional</SelectItem>
+                      <SelectItem value="friendly">😊 Friendly</SelectItem>
+                      <SelectItem value="direct">📍 Direct</SelectItem>
+                      <SelectItem value="empathetic">💙 Empathetic</SelectItem>
+                      <SelectItem value="assertive">💪 Assertive</SelectItem>
+                      
+                      {/* Advanced Tones */}
+                      <SelectItem value="funny-weird">😄 Funny & Weird</SelectItem>
+                      <SelectItem value="curious-intrigued">🤔 Curious & Intrigued</SelectItem>
+                      <SelectItem value="fanboy-mode">🤩 Fanboy Mode</SelectItem>
+                      <SelectItem value="apologetic">😅 Apologetic</SelectItem>
+                      
+                      {/* Premium Tones */}
+                      <SelectItem value="bold-cocky" disabled={user.tier !== 'premium'}>
+                        😈 Bold & Cocky {user.tier !== 'premium' && '(Premium)'}
+                      </SelectItem>
+                      <SelectItem value="flirty-playful" disabled={user.tier !== 'premium'}>
+                        😍 Flirty & Playful {user.tier !== 'premium' && '(Premium)'}
+                      </SelectItem>
+                      <SelectItem value="chaotic-evil" disabled={user.tier !== 'premium'}>
+                        🧌 Chaotic Evil {user.tier !== 'premium' && '(Premium)'}
+                      </SelectItem>
+                      <SelectItem value="whisper-mode" disabled={user.tier !== 'premium'}>
+                        🤫 Whisper Mode {user.tier !== 'premium' && '(Premium)'}
                       </SelectItem>
                     </SelectContent>
                   </Select>

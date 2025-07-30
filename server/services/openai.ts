@@ -35,26 +35,37 @@ function getModelConfig(tier: UserTier): ModelConfig {
 
 export interface GenerateDmParams {
   target: string;
-  tone: "professional" | "casual" | "chaos";
+  tone: "professional" | "friendly" | "direct" | "empathetic" | "assertive" | "funny-weird" | "bold-cocky" | "flirty-playful" | "curious-intrigued" | "fanboy-mode" | "apologetic" | "chaotic-evil" | "whisper-mode";
   userTier?: UserTier;
 }
 
 export async function generateDm({ target, tone, userTier = "Free" }: GenerateDmParams): Promise<string> {
-  const prompts = {
-    professional: `You are a B2B copywriting expert writing cold outreach messages for professionals on LinkedIn, email, or X (Twitter). Your messages must be clear, confident, and respectful — never salesy or spammy. Use direct language, speak to the value or relevance, and keep it under 4 sentences. Assume the reader is busy and skeptical. No fluff, no emoji, no intro lines like "Hope you're well." Respond only with the message text.
-
-Target person: ${target}`,
-
-    casual: `You are writing a casual, friendly cold DM for a modern professional audience. Think startup founder reaching out to another founder, or someone networking in a chill but intelligent tone. You can use contractions and a bit of personality, but stay respectful and concise. Keep it short — no more than 4 sentences. Don't over-explain or use buzzwords. Respond only with the message text.
-
-Target person: ${target}`,
-
-    chaos: `You are writing a bold, unpredictable cold DM that breaks the norm — without being rude or inappropriate. The tone should be high-energy, clever, and attention-grabbing. Think "this might actually get a reply" energy, like a rogue SDR on a Friday. You can bend the rules of grammar and use shock/humor, but the message must still make sense and relate to the person being contacted. Keep it short. No intros. No disclaimers. Just drop the DM.
-
-Target person: ${target}`
-  };
+  // Use the new tone-specific prompt system for consistency
+  const prompt = buildPersonalizedPrompt({
+    recipientName: target,
+    tone: tone,
+    scenario: "cold outreach",
+    platform: "LinkedIn"
+  });
 
   const config = getModelConfig(userTier);
+
+  // Map some legacy tone names to new system equivalents
+  const temperatureMap: Record<string, number> = {
+    "chaotic-evil": 0.9,
+    "funny-weird": 0.9,
+    "bold-cocky": 0.8,
+    "flirty-playful": 0.8,
+    "whisper-mode": 0.7,
+    "curious-intrigued": 0.7,
+    "fanboy-mode": 0.8,
+    "assertive": 0.7,
+    "direct": 0.6,
+    "professional": 0.6,
+    "empathetic": 0.7,
+    "friendly": 0.7,
+    "apologetic": 0.6
+  };
 
   try {
     const response = await openai.chat.completions.create({
@@ -62,11 +73,11 @@ Target person: ${target}`
       messages: [
         {
           role: "user",
-          content: prompts[tone],
+          content: prompt,
         },
       ],
       max_tokens: config.maxTokens,
-      temperature: tone === "chaos" ? 0.9 : tone === "casual" ? 0.8 : 0.7,
+      temperature: temperatureMap[tone] || 0.7,
     });
 
     const generatedMessage = response.choices[0].message.content?.trim();
@@ -84,21 +95,32 @@ Target person: ${target}`
 
 // New streaming function for real-time generation experience
 export async function generateDmStream({ target, tone, userTier = "Free" }: GenerateDmParams): Promise<AsyncIterable<string>> {
-  const prompts = {
-    professional: `You are a B2B copywriting expert writing cold outreach messages for professionals on LinkedIn, email, or X (Twitter). Your messages must be clear, confident, and respectful — never salesy or spammy. Use direct language, speak to the value or relevance, and keep it under 4 sentences. Assume the reader is busy and skeptical. No fluff, no emoji, no intro lines like "Hope you're well." Respond only with the message text.
-
-Target person: ${target}`,
-
-    casual: `You are writing a casual, friendly cold DM for a modern professional audience. Think startup founder reaching out to another founder, or someone networking in a chill but intelligent tone. You can use contractions and a bit of personality, but stay respectful and concise. Keep it short — no more than 4 sentences. Don't over-explain or use buzzwords. Respond only with the message text.
-
-Target person: ${target}`,
-
-    chaos: `You are writing a bold, unpredictable cold DM that breaks the norm — without being rude or inappropriate. The tone should be high-energy, clever, and attention-grabbing. Think "this might actually get a reply" energy, like a rogue SDR on a Friday. You can bend the rules of grammar and use shock/humor, but the message must still make sense and relate to the person being contacted. Keep it short. No intros. No disclaimers. Just drop the DM.
-
-Target person: ${target}`
-  };
+  // Use the new tone-specific prompt system for consistency
+  const prompt = buildPersonalizedPrompt({
+    recipientName: target,
+    tone: tone,
+    scenario: "cold outreach",
+    platform: "LinkedIn"
+  });
 
   const config = getModelConfig(userTier);
+
+  // Map tone names to appropriate temperature values
+  const temperatureMap: Record<string, number> = {
+    "chaotic-evil": 0.9,
+    "funny-weird": 0.9,
+    "bold-cocky": 0.8,
+    "flirty-playful": 0.8,
+    "whisper-mode": 0.7,
+    "curious-intrigued": 0.7,
+    "fanboy-mode": 0.8,
+    "assertive": 0.7,
+    "direct": 0.6,
+    "professional": 0.6,
+    "empathetic": 0.7,
+    "friendly": 0.7,
+    "apologetic": 0.6
+  };
 
   try {
     const stream = await openai.chat.completions.create({
@@ -106,11 +128,11 @@ Target person: ${target}`
       messages: [
         {
           role: "user",
-          content: prompts[tone],
+          content: prompt,
         },
       ],
       max_tokens: config.maxTokens,
-      temperature: tone === "chaos" ? 0.9 : tone === "casual" ? 0.8 : 0.7,
+      temperature: temperatureMap[tone] || 0.7,
       stream: true, // Enable streaming
     });
 
@@ -142,6 +164,39 @@ export interface PersonalizationData {
   language?: string;
 }
 
+// Tone-specific prompt templates
+const getTonePromptTemplate = (tone: string): string => {
+  const templates: Record<string, string> = {
+    "professional": "You are a corporate communication expert. Write concise, polished cold DMs for professionals. Prioritize clarity, brevity, and value. Sound trustworthy and smart, but avoid sounding robotic. Show you've done research. Mention shared context if available.",
+    
+    "friendly": "You are a warm, approachable communicator. Write friendly cold DMs that feel genuine and personable. Be conversational without being too casual. Focus on building rapport and finding common ground.",
+    
+    "direct": "You are a straight-talking, no-nonsense communicator. Write direct cold DMs that get to the point quickly. Be clear, concise, and confident. No small talk or fluff - just value and purpose.",
+    
+    "empathetic": "You are a thoughtful, understanding communicator. Write empathetic cold DMs that show you understand their challenges and pain points. Be supportive and solution-oriented while remaining professional.",
+    
+    "assertive": "You are a confident, decisive communicator. Write assertive cold DMs that demonstrate expertise and leadership. Be bold in your value proposition while remaining respectful and professional.",
+    
+    "funny-weird": "You are an eccentric, brilliant DM writer with an odd sense of humor. The goal is to grab attention and make them laugh or smile, while sneakily pitching or opening a convo. Think 'meme brain meets sales pitch.' Be playful, be unpredictable. Never be boring.",
+    
+    "bold-cocky": "You're a confident, high-performing badass. Your DMs ooze charisma and confidence. You don't ask — you state. You don't beg — you tease. Sound like you already know you're the best option on the table, and they're lucky you're messaging.",
+    
+    "flirty-playful": "You write DMs like someone with a crush and a pitch. Be cheeky, charming, and clever — like flirting without desperation. Create emotional engagement while still sliding your message in smoothly.",
+    
+    "curious-intrigued": "You are genuinely fascinated and curious about their work. Write DMs that show authentic interest and intrigue. Ask thoughtful questions and express genuine curiosity about their expertise or recent accomplishments.",
+    
+    "fanboy-mode": "You are a genuine admirer of their work. Write DMs that express authentic appreciation and enthusiasm for what they do. Be specific about what impresses you, but avoid being creepy or over-the-top.",
+    
+    "apologetic": "You are polite and slightly apologetic for reaching out. Write DMs that acknowledge you're interrupting their day but have something valuable to offer. Be humble but confident in your value proposition.",
+    
+    "chaotic-evil": "You are unfiltered, chaotic, and utterly unpredictable. Your job is to write cold DMs that break every norm — weird analogies, dark humor, whispered cult phrases, poetic nonsense — anything that makes it impossible to ignore. Every DM should feel like 'wtf did I just read… I need to respond.'",
+    
+    "whisper-mode": "You are mysterious and cryptic. Write DMs that hint at secrets or exclusive information. Be intriguing and slightly mysterious, like you know something they don't. Create curiosity through what you don't say rather than what you do."
+  };
+  
+  return templates[tone] || templates["professional"];
+};
+
 export function buildPersonalizedPrompt(data: PersonalizationData): string {
   const {
     recipientName,
@@ -155,10 +210,8 @@ export function buildPersonalizedPrompt(data: PersonalizationData): string {
     language = "English"
   } = data;
 
-  // Map tone to message tone values
-  const messageTone = tone === "chaos" ? "Off the Rails" : 
-                     tone === "professional" ? "Professional" :
-                     tone === "casual" ? "Casual" : tone;
+  // Get the tone-specific prompt template
+  const toneTemplate = getTonePromptTemplate(tone);
 
   // Map scenario to scenario type
   const scenarioType = scenario || "cold outreach";
@@ -167,24 +220,23 @@ export function buildPersonalizedPrompt(data: PersonalizationData): string {
   const languageInstruction = language === "English" ? "" : 
     `\n\nIMPORTANT: Write the entire message in ${language}. Use natural, native-level ${language} with appropriate cultural context and communication style for that language.`;
 
-  // Use the improved prompt structure
-  const prompt = `You're a world-class cold outreach copywriter. 
+  // Build the personalized prompt with tone injection
+  const prompt = `${toneTemplate}
 
-Your job is to craft short, punchy DMs for ${platform || 'LinkedIn'}, based on these inputs:
+Your task: Write 3 short, punchy DMs for ${platform || 'LinkedIn'} based on these inputs:
 - Recipient: ${recipientName}${recipientRole ? `, ${recipientRole}` : ''}${companyName ? ` at ${companyName}` : ''}
 - Scenario: ${scenarioType}
-- Tone: ${messageTone}
-- Hook: ${customHook || 'N/A'}
+- Context/Hook: ${customHook || reason || 'General outreach'}
 
-Write 3 variations that:
-1. Sound natural, confident, and human (no robotic or AI-sounding text)
-2. Include a unique insight or hook related to the scenario
-3. Stay within the platform's message limits (e.g. Twitter/LinkedIn DMs = ~280 characters)
-4. Avoid fluff like "Hope this finds you well"
-5. Spark curiosity, tease value, or prompt a response — don't explain everything
-6. Respect the tone. If tone is "Off the Rails", get weird, bold, or chaotic. If it's "Professional", stay crisp but not boring.${languageInstruction}
+Requirements:
+1. Stay true to your assigned tone and personality
+2. Keep each DM under 280 characters (platform limits)
+3. Make them sound natural and human, not AI-generated
+4. Include specific details about the recipient when possible
+5. Create curiosity or prompt a response
+6. Avoid generic phrases like "Hope this finds you well"${languageInstruction}
 
-Respond with ONLY the message variations, no headings or explanations.`;
+Respond with ONLY the 3 message variations, no headings or explanations.`;
 
   return prompt;
 }

@@ -35,7 +35,21 @@ export type InsertDmGeneration = z.infer<typeof insertDmGenerationSchema>;
 
 export const generateDmRequestSchema = z.object({
   target: z.string().min(1, "Please tell us who you're messaging"),
-  tone: z.enum(["professional", "casual", "chaos"], {
+  tone: z.enum([
+    "professional", 
+    "friendly", 
+    "direct", 
+    "empathetic", 
+    "assertive",
+    "funny-weird",
+    "bold-cocky", 
+    "flirty-playful",
+    "curious-intrigued",
+    "fanboy-mode",
+    "apologetic",
+    "chaotic-evil",
+    "whisper-mode"
+  ], {
     required_error: "Please select a tone",
   }),
 });

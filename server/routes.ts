@@ -13,7 +13,21 @@ const personalizedDmRequestSchema = z.object({
   companyName: z.string().max(100).trim().optional(),
   reason: z.string().max(500).trim().optional(),
   customHook: z.string().max(300).trim().optional(),
-  tone: z.enum(["professional", "casual", "chaos"]),
+  tone: z.enum([
+    "professional", 
+    "friendly", 
+    "direct", 
+    "empathetic", 
+    "assertive",
+    "funny-weird",
+    "bold-cocky", 
+    "flirty-playful",
+    "curious-intrigued",
+    "fanboy-mode",
+    "apologetic",
+    "chaotic-evil",
+    "whisper-mode"
+  ]),
   scenario: z.string().max(200).trim().optional(),
   platform: z.string().max(50).trim().optional(),
   language: z.enum(["English", "Portuguese", "Spanish", "Japanese", "French", "German", "Italian", "Korean", "Chinese"]).default("English"),
@@ -40,10 +54,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Determine user tier - default to "Free" if no user object present
       const userTier = (req as any).user?.tier || "Free";
       
-      // Check if off the rails mode is requested (mock premium feature)
-      if (validatedData.tone === "chaos" && !isPremium) {
+      // Check if premium tones are requested
+      const premiumTones = ["chaotic-evil", "bold-cocky", "flirty-playful", "whisper-mode"];
+      if (premiumTones.includes(validatedData.tone) && !isPremium) {
         return res.status(402).json({ 
-          message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
+          message: "Premium tones are exclusive features. Upgrade to unlock all advanced personality modes!",
           requiresPremium: true 
         });
       }
@@ -122,10 +137,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         language: validatedData.language, // Language is enum, no need to sanitize
       };
 
-      // Check if off the rails mode is requested and user is not premium
-      if (sanitizedData.tone === "chaos" && !sanitizedData.isPremium) {
+      // Check if premium tones are requested and user is not premium
+      const premiumTones = ["chaotic-evil", "bold-cocky", "flirty-playful", "whisper-mode"];
+      if (premiumTones.includes(sanitizedData.tone) && !sanitizedData.isPremium) {
         return res.status(402).json({
-          message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
+          message: "Premium tones are exclusive features. Upgrade to unlock all advanced personality modes!",
           requiresPremium: true,
           success: false
         });
