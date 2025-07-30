@@ -8,6 +8,8 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  // Ensure messagingSenderId is included for complete config
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "default",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -28,10 +30,10 @@ const provider = new GoogleAuthProvider();
 // Configure OAuth scopes and parameters
 provider.addScope('email');
 provider.addScope('profile');
-// Remove 'select_account' to prevent double popups and improve session persistence
-provider.setCustomParameters({
-  'prompt': 'consent' // Only ask for consent when needed, not account selection
-});
+// Optimize for Replit environment - remove custom parameters that might cause issues
+// provider.setCustomParameters({
+//   'prompt': 'consent'
+// });
 
 export interface UserProfile {
   uid: string;
@@ -48,8 +50,17 @@ export const signInWithGoogle = async (): Promise<User> => {
       apiKey: !!import.meta.env.VITE_FIREBASE_API_KEY,
       projectId: !!import.meta.env.VITE_FIREBASE_PROJECT_ID,
       appId: !!import.meta.env.VITE_FIREBASE_APP_ID,
+      authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+      currentDomain: window.location.hostname
     });
 
+    // Check if Firebase is properly configured
+    if (!import.meta.env.VITE_FIREBASE_API_KEY || !import.meta.env.VITE_FIREBASE_PROJECT_ID || !import.meta.env.VITE_FIREBASE_APP_ID) {
+      throw new Error('Firebase configuration is missing. Please set VITE_FIREBASE_* environment variables.');
+    }
+
+    console.log("Starting Google sign-in with popup...");
+    
     // Use popup method optimized for Replit environment
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
@@ -76,9 +87,14 @@ export const signInWithGoogle = async (): Promise<User> => {
     } else if (error.code === 'auth/cancelled-popup-request') {
       throw new Error('Another sign-in attempt is in progress. Please wait and try again.');
     } else if (error.code === 'auth/unauthorized-domain') {
-      throw new Error('This domain is not authorized for Google sign-in. Please contact support.');
+      const currentDomain = window.location.hostname;
+      throw new Error(`This domain (${currentDomain}) is not authorized for Google sign-in. Please add "${currentDomain}" to your Firebase Console > Authentication > Settings > Authorized domains.`);
     } else if (error.code === 'auth/operation-not-allowed') {
       throw new Error('Google sign-in is not enabled for this project.');
+    } else if (error.code === 'auth/invalid-api-key') {
+      throw new Error('Invalid Firebase API key. Please check your configuration.');
+    } else if (error.message.includes('Firebase configuration')) {
+      throw new Error('Firebase is not properly configured. Please check environment variables.');
     }
     
     throw error;
