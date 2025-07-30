@@ -284,8 +284,8 @@ export default function Home() {
                 )}
               </Button>
             </div>
-            {/* Usage counter positioned in bottom-right */}
-            <div className="absolute bottom-4 right-6">
+            {/* Usage counter positioned in bottom-right with proper spacing */}
+            <div className="absolute bottom-2 right-6">
               {getUsageDisplay()}
             </div>
           </div>
