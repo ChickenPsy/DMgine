@@ -12,7 +12,20 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "default",
 };
 
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase app with check for existing app
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+} catch (error: any) {
+  if (error.code === 'app/duplicate-app') {
+    // App already exists, get the existing one
+    const { getApp } = await import('firebase/app');
+    app = getApp();
+  } else {
+    throw error;
+  }
+}
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
