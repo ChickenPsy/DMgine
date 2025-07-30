@@ -55,11 +55,11 @@ export default function Home() {
     const initializeApp = async () => {
       await usageTracker.initialize();
       
-      // Handle redirect result on page load
+      // Ensure Firebase auth state is properly restored
       try {
         await handleRedirectResult();
       } catch (error) {
-        console.error("Failed to handle redirect result:", error);
+        console.error("Failed to restore auth state:", error);
       }
       
       // Check for upgrade success from URL params
@@ -210,16 +210,23 @@ export default function Home() {
       await signInWithGoogle();
       toast({
         title: "Welcome! 🎉",
-        description: "You're now signed in with Google.",
+        description: "You're now signed in and ready to generate unlimited DMs.",
       });
     } catch (error: any) {
       console.error("Sign in error:", error);
       
-      // Show more specific error messages
-      const errorMessage = error.message || "Failed to sign in. Please try again.";
+      // Better error handling for Replit environment
+      let errorMessage = "Please try again.";
+      if (error.message.includes("popup")) {
+        errorMessage = "Please allow popups in your browser and try again.";
+      } else if (error.message.includes("network")) {
+        errorMessage = "Please check your internet connection and try again.";
+      } else if (error.message.includes("unauthorized-domain")) {
+        errorMessage = "This domain is not authorized. Please contact support.";
+      }
       
       toast({
-        title: "Sign In Failed",
+        title: "Sign in failed",
         description: errorMessage,
         variant: "destructive",
       });

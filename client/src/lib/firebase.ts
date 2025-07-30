@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged, User } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User, setPersistence, browserLocalPersistence } from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc, enableNetwork } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -14,12 +14,23 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Configure auth persistence for better session handling in Replit
+setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.warn("Failed to set auth persistence:", error);
+});
+
+// Ensure Firestore network is enabled
+enableNetwork(db).catch((error) => {
+  console.warn("Failed to enable Firestore network:", error);
+});
+
 const provider = new GoogleAuthProvider();
 // Configure OAuth scopes and parameters
 provider.addScope('email');
 provider.addScope('profile');
+// Remove 'select_account' to prevent double popups and improve session persistence
 provider.setCustomParameters({
-  'prompt': 'select_account'
+  'prompt': 'consent' // Only ask for consent when needed, not account selection
 });
 
 export interface UserProfile {
@@ -39,32 +50,16 @@ export const signInWithGoogle = async (): Promise<User> => {
       appId: !!import.meta.env.VITE_FIREBASE_APP_ID,
     });
 
-    // Try popup first, fallback to redirect if it fails
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      console.log("Sign-in successful:", user.email);
-      
-      // Create or update user profile in Firestore
-      await createOrUpdateUserProfile(user);
-      
-      return user;
-    } catch (popupError: any) {
-      console.log("Popup failed, trying redirect:", popupError.code);
-      
-      // If popup fails, use redirect method
-      if (popupError.code === 'auth/popup-blocked' || 
-          popupError.code === 'auth/popup-closed-by-user' ||
-          popupError.code === 'auth/cancelled-popup-request') {
-        
-        await signInWithRedirect(auth, provider);
-        // The redirect will handle the rest, this function won't return normally
-        throw new Error('Redirecting to Google sign-in...');
-      }
-      
-      throw popupError;
-    }
+    // Use popup method optimized for Replit environment
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    
+    console.log("Sign-in successful:", user.email);
+    
+    // Create or update user profile in Firestore
+    await createOrUpdateUserProfile(user);
+    
+    return user;
   } catch (error: any) {
     console.error("Detailed sign-in error:", {
       code: error.code,
@@ -73,15 +68,15 @@ export const signInWithGoogle = async (): Promise<User> => {
       stack: error.stack
     });
     
-    // Handle specific Firebase auth errors
+    // Handle specific Firebase auth errors with better messaging
     if (error.code === 'auth/popup-blocked') {
-      throw new Error('Popup was blocked. Trying redirect method...');
+      throw new Error('Popup was blocked by your browser. Please allow popups for this site and try again.');
     } else if (error.code === 'auth/popup-closed-by-user') {
-      throw new Error('Sign-in popup was closed. Trying redirect method...');
+      throw new Error('Sign-in was cancelled. Please try again.');
     } else if (error.code === 'auth/cancelled-popup-request') {
-      throw new Error('Another sign-in popup is already open. Trying redirect method...');
+      throw new Error('Another sign-in attempt is in progress. Please wait and try again.');
     } else if (error.code === 'auth/unauthorized-domain') {
-      throw new Error('This domain is not authorized for Google sign-in.');
+      throw new Error('This domain is not authorized for Google sign-in. Please contact support.');
     } else if (error.code === 'auth/operation-not-allowed') {
       throw new Error('Google sign-in is not enabled for this project.');
     }
@@ -90,23 +85,15 @@ export const signInWithGoogle = async (): Promise<User> => {
   }
 };
 
-// Handle redirect result on page load
+// Handle redirect result on page load (simplified for popup-only approach)
 export const handleRedirectResult = async (): Promise<User | null> => {
-  try {
-    const result = await getRedirectResult(auth);
-    if (result?.user) {
-      console.log("Redirect sign-in successful:", result.user.email);
-      
-      // Create or update user profile in Firestore
-      await createOrUpdateUserProfile(result.user);
-      
-      return result.user;
-    }
-    return null;
-  } catch (error: any) {
-    console.error("Redirect result error:", error);
-    throw error;
-  }
+  // Since we're using popup-only now, this function just ensures auth state persistence
+  return new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
 };
 
 export const signOutUser = async () => {
@@ -129,7 +116,7 @@ export const createOrUpdateUserProfile = async (user: User): Promise<UserProfile
     }
 
     // Add a small delay to ensure Firebase has fully initialized
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     const userDoc = await getDoc(userRef);
     

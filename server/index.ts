@@ -40,7 +40,9 @@ app.use(helmet({
         "'self'",
         "https://*.googleapis.com",
         "https://*.google.com",
-        "https://*.firebaseapp.com"
+        "https://*.firebaseapp.com",
+        "https://accounts.google.com",
+        "https://firebase.googleapis.com"
       ],
       styleSrc: [
         "'self'",
@@ -51,7 +53,8 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       frameSrc: [
         "https://*.firebaseapp.com",
-        "https://*.google.com"
+        "https://*.google.com",
+        "https://accounts.google.com"
       ],
       baseUri: ["'self'"]
     }
