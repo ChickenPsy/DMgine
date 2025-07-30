@@ -21,10 +21,46 @@ try {
   process.exit(1);
 }
 
-// Security middleware - disable CSP and frame options for Firebase
+// Security middleware with Firebase-friendly CSP
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable server-side CSP to use HTML meta tag instead
-  frameguard: false, // Disable X-Frame-Options to allow Firebase auth popups
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        "https://www.gstatic.com",
+        "https://www.googleapis.com",
+        "https://*.googleapis.com",        // Added wildcard
+        "https://*.firebaseapp.com",       // Added Firebase apps
+        "https://firebase.google.com",
+        "https://replit.com"               // Added for your banner
+      ],
+      connectSrc: [
+        "'self'",
+        "https://www.googleapis.com",
+        "https://*.googleapis.com",        // Added wildcard
+        "https://*.firebaseapp.com",       // Added Firebase apps
+        "https://identitytoolkit.googleapis.com",
+        "https://securetoken.googleapis.com",
+        "https://firestore.googleapis.com"
+      ],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com"
+      ],
+      imgSrc: ["'self'", "data:", "https://*"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      frameSrc: [
+        "'self'",                          // Added self
+        "https://*.firebaseapp.com", 
+        "https://*.google.com"
+      ],
+      baseUri: ["'self'"]
+    }
+  }
 }));
 
 // CORS configuration
