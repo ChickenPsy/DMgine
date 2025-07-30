@@ -19,7 +19,7 @@ try {
 } catch (error: any) {
   if (error.code === 'app/duplicate-app') {
     // App already exists, get the existing one
-    const { getApp } = await import('firebase/app');
+    const { getApp } = require('firebase/app');
     app = getApp();
   } else {
     throw error;
