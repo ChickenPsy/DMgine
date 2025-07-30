@@ -7,6 +7,7 @@ import { userStore } from "@/lib/user-store";
 import { usageTracker } from "@/lib/usage-tracker";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Zap, CheckCircle2 } from "lucide-react";
+import { handleUpgradeToPremium as handleUpgrade } from "@/lib/upgrade-handler";
 
 interface FreemiumModalProps {
   isOpen: boolean;
@@ -44,35 +45,20 @@ export function FreemiumModal({ isOpen, onClose, onSuccess }: FreemiumModalProps
   };
 
   const handleUpgradeToPremium = async () => {
-    setIsProcessingPayment(true);
-    try {
-      // Create Stripe checkout session
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId: 'price_pro_unlimited', // We'll create this
-          successUrl: window.location.origin + '?upgrade=success',
-          cancelUrl: window.location.origin + '?upgrade=cancelled',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create checkout session');
+    await handleUpgrade({
+      onLoadingChange: setIsProcessingPayment,
+      onError: (error) => {
+        toast({
+          title: "Upgrade failed",
+          description: error,
+          variant: "destructive",
+        });
+      },
+      onSuccess: () => {
+        // Close modal on successful redirect to Stripe
+        onClose();
       }
-
-      const { url } = await response.json();
-      window.location.href = url;
-    } catch (error) {
-      toast({
-        title: "Payment failed",
-        description: "Please try again or contact support.",
-        variant: "destructive",
-      });
-      setIsProcessingPayment(false);
-    }
+    });
   };
 
   const usedCount = usageTracker.getFreeUsageCount();

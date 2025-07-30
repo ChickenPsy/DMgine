@@ -5,7 +5,7 @@ import { Check, ArrowLeft, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { userStore, AppUser } from "@/lib/user-store";
-import { updateUserPremiumStatus } from "@/lib/firebase";
+import { handleUpgradeToPremium } from "@/lib/upgrade-handler";
 
 export default function Premium() {
   const [isUpgrading, setIsUpgrading] = useState(false);
@@ -18,37 +18,21 @@ export default function Premium() {
   }, []);
 
   const handleUpgrade = async () => {
-    if (!user.isAuthenticated) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in with Google to upgrade to Premium.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUpgrading(true);
-    
-    try {
-      // Update user premium status in Firestore
-      await updateUserPremiumStatus(user.firebaseUser!.uid, true);
-      
-      // Update local user store
-      userStore.upgradeToPremium();
-      
-      setIsUpgrading(false);
-      toast({
-        title: "Welcome to Premium! 🎉",
-        description: "Your upgrade was successful. Off the Rails Mode is now unlocked!",
-      });
-    } catch (error) {
-      setIsUpgrading(false);
-      toast({
-        title: "Upgrade failed",
-        description: "Please try again or contact support.",
-        variant: "destructive",
-      });
-    }
+    await handleUpgradeToPremium({
+      onLoadingChange: setIsUpgrading,
+      onError: (error) => {
+        toast({
+          title: "Upgrade failed",
+          description: error,
+          variant: "destructive",
+        });
+      },
+      onSuccess: () => {
+        // This will be called when redirecting to Stripe, 
+        // but user will return to success URL after payment
+        console.log("Redirecting to Stripe checkout...");
+      }
+    });
   };
 
   return (
