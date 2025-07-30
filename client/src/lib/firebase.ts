@@ -118,40 +118,88 @@ export const signOutUser = async () => {
   }
 };
 
-// Create or update user profile in Firestore
+// Create or update user profile in Firestore with offline handling
 export const createOrUpdateUserProfile = async (user: User): Promise<UserProfile> => {
   const userRef = doc(db, 'users', user.uid);
-  const userDoc = await getDoc(userRef);
   
-  const userData: UserProfile = {
-    uid: user.uid,
-    name: user.displayName || '',
-    email: user.email || '',
-    photo: user.photoURL || '',
-    isPremium: userDoc.exists() ? userDoc.data().isPremium || false : false,
-    createdAt: userDoc.exists() ? userDoc.data().createdAt : new Date().toISOString(),
-  };
-  
-  // Update Firestore with latest user data
-  await setDoc(userRef, userData, { merge: true });
-  
-  return userData;
-};
-
-// Get user premium status
-export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   try {
-    const userRef = doc(db, 'users', uid);
+    // Check if we're online before attempting Firestore operations
+    if (!navigator.onLine) {
+      throw new Error('You appear to be offline. Please check your connection and try again.');
+    }
+
+    // Add a small delay to ensure Firebase has fully initialized
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     const userDoc = await getDoc(userRef);
     
-    if (userDoc.exists()) {
-      return userDoc.data() as UserProfile;
+    const userData: UserProfile = {
+      uid: user.uid,
+      name: user.displayName || '',
+      email: user.email || '',
+      photo: user.photoURL || '',
+      isPremium: userDoc.exists() ? userDoc.data().isPremium || false : false,
+      createdAt: userDoc.exists() ? userDoc.data().createdAt : new Date().toISOString(),
+    };
+    
+    // Update Firestore with latest user data
+    await setDoc(userRef, userData, { merge: true });
+    
+    return userData;
+  } catch (error: any) {
+    console.error('Error creating/updating user profile:', error);
+    
+    // Handle specific Firestore errors
+    if (error.code === 'unavailable' || error.code === 'failed-precondition') {
+      throw new Error('Unable to connect to our servers. Please check your internet connection and try again.');
+    } else if (error.code === 'permission-denied') {
+      throw new Error('Permission denied. Please sign out and sign in again.');
     }
-    return null;
-  } catch (error) {
-    console.error("Error fetching user profile:", error);
-    return null;
+    
+    throw error;
   }
+};
+
+// Get user premium status with retry logic and offline handling
+export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+  const maxRetries = 3;
+  let retryCount = 0;
+  
+  while (retryCount < maxRetries) {
+    try {
+      // Check if we're online
+      if (!navigator.onLine) {
+        throw new Error('You appear to be offline. Please check your connection and try again.');
+      }
+
+      const userRef = doc(db, 'users', uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        return userDoc.data() as UserProfile;
+      }
+      return null;
+    } catch (error: any) {
+      console.error("Error fetching user profile:", error);
+      
+      retryCount++;
+      
+      // Handle specific errors
+      if (error.code === 'unavailable' && retryCount < maxRetries) {
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        continue;
+      } else if (error.code === 'unavailable') {
+        throw new Error('Unable to connect to our servers. Please check your internet connection and try again.');
+      } else if (error.code === 'permission-denied') {
+        throw new Error('Permission denied. Please sign out and sign in again.');
+      }
+      
+      return null;
+    }
+  }
+  
+  return null;
 };
 
 // Update user premium status
