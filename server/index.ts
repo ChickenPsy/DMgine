@@ -32,27 +32,21 @@ app.use(helmet({
         "'unsafe-eval'",
         "https://www.gstatic.com",
         "https://www.googleapis.com",
-        "https://*.googleapis.com",        // Added wildcard
-        "https://*.firebaseapp.com",       // Added Firebase apps
+        "https://www.gstatic.cn",
+        "https://www.google.com",
         "https://firebase.google.com",
-        "https://replit.com",              // Added for your banner
-        "https://apis.google.com",         // ADD THIS
-        "https://www.google.com"           // ADD THIS
+        `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dmgine-f5b08'}.firebaseapp.com`,
+        "https://firebaseapp.com",
+        "https://*.firebaseapp.com",
+        "https://replit.com"
       ],
       connectSrc: [
         "'self'",
         "https://www.googleapis.com",
-        "https://*.googleapis.com",        // Added wildcard
-        "https://*.firebaseapp.com",       // Added Firebase apps
+        "https://firebase.googleapis.com",
         "https://identitytoolkit.googleapis.com",
         "https://securetoken.googleapis.com",
-        "https://firestore.googleapis.com",
-        "https://apis.google.com",         // ADD THIS
-        "https://www.google.com",          // ADD THIS
-        "https://accounts.google.com",      // ADD THIS
-        "https://content-firebaseremoteconfig.googleapis.com", // For Firebase Remote Config
-        "https://firebase-settings.googleapis.com",           // For Firebase settings
-        "https://www.google-analytics.com",                   // If you use Analytics
+        "https://firestore.googleapis.com"
       ],
       styleSrc: [
         "'self'",
@@ -62,8 +56,7 @@ app.use(helmet({
       imgSrc: ["'self'", "data:", "https://*"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       frameSrc: [
-        "'self'",                          // Added self
-        "https://*.firebaseapp.com", 
+        "https://*.firebaseapp.com",
         "https://*.google.com"
       ],
       baseUri: ["'self'"]
