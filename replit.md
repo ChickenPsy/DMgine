@@ -14,7 +14,7 @@ This is a modern React-based web application that generates personalized direct 
 ✓ **Security Validation**: Added startup environment variable validation and error sanitization
 ✓ **Drizzle Best Practices**: Updated DATABASE_URL format for secure Neon SSL connections and documented production-ready config
 ✓ **Session Store Optimization**: Configured PostgreSQL session store for production with memory store fallback for development to prevent memory leaks
-✓ **Content Security Policy**: Added comprehensive CSP headers with all Firebase domains (*.firebaseapp.com, *.googleapis.com, securetoken.googleapis.com, identitytoolkit.googleapis.com, accounts.google.com) to resolve authentication runtime errors
+✓ **Content Security Policy**: Added comprehensive CSP headers with 'unsafe-eval' and all Firebase domains to fully support Firebase Auth and Firestore operations
 
 ## User Preferences
 
