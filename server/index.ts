@@ -4,9 +4,12 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import session from "express-session";
 import csrf from "csurf";
+import MemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { validateEnvironmentSecurity, sanitizeErrorForClient } from "./security-check";
+import { pool } from "./db";
 
 const app = express();
 
@@ -61,8 +64,22 @@ app.use('/api/generate', apiLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-// Session configuration with secure settings - simplified for now
+// Session store configuration
+const PgSession = connectPgSimple(session);
+const memoryStoreInstance = MemoryStore(session);
+
+const sessionStore = process.env.NODE_ENV === "production"
+  ? new PgSession({ 
+      pool, // Use existing PostgreSQL pool
+      tableName: 'session' // Optional: customize table name
+    })
+  : new memoryStoreInstance({
+      checkPeriod: 86400000 // Prune expired entries every 24h to prevent memory leaks
+    });
+
+// Session configuration with environment-appropriate store
 app.use(session({
+  store: sessionStore,
   secret: process.env.SESSION_SECRET || 'fallback-dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
@@ -179,6 +196,10 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
+    validateEnvironmentSecurity();
+    
+    // Log session store type for debugging
+    log(`Session store: ${process.env.NODE_ENV === 'production' ? 'PostgreSQL' : 'Memory'}`);
     log(`serving on port ${port}`);
   });
 })();
