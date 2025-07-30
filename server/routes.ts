@@ -1,8 +1,32 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { z } from "zod";
 import { storage } from "./storage";
 import { generateDmRequestSchema } from "@shared/schema";
 import { generateDm, buildPersonalizedPrompt, generatePersonalizedDM } from "./services/openai";
+import { sanitizeErrorForClient } from "./security-check";
+
+// Input validation schemas
+const personalizedDmRequestSchema = z.object({
+  recipientName: z.string().min(1).max(100).trim(),
+  recipientRole: z.string().max(100).trim().optional(),
+  companyName: z.string().max(100).trim().optional(),
+  reason: z.string().max(500).trim().optional(),
+  customHook: z.string().max(300).trim().optional(),
+  tone: z.enum(["professional", "casual", "chaos"]),
+  scenario: z.string().max(200).trim().optional(),
+  platform: z.string().max(50).trim().optional(),
+  isPremium: z.boolean().default(false)
+});
+
+// Input sanitization helper
+const sanitizeInput = (input: string): string => {
+  return input
+    .replace(/[<>]/g, '') // Remove potential HTML tags
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/on\w+=/gi, '') // Remove event handlers
+    .trim();
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy generate endpoint for backward compatibility
@@ -42,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Failed to generate DM. Please try again."
+        message: sanitizeErrorForClient(error)
       });
     }
   });
@@ -52,28 +76,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Smart personalization DM request received:", req.body);
       
-      const { 
-        recipientName, 
-        recipientRole, 
-        companyName, 
-        reason, 
-        customHook, 
-        tone, 
-        scenario, 
-        platform,
-        isPremium = false 
-      } = req.body;
+      // Validate and sanitize input using Zod
+      const validatedData = personalizedDmRequestSchema.parse(req.body);
       
-      if (!recipientName || !tone) {
-        return res.status(400).json({ 
-          error: "Missing required fields", 
-          required: ["recipientName", "tone"],
-          success: false
-        });
-      }
+      // Additional sanitization for text fields
+      const sanitizedData = {
+        ...validatedData,
+        recipientName: sanitizeInput(validatedData.recipientName),
+        recipientRole: validatedData.recipientRole ? sanitizeInput(validatedData.recipientRole) : undefined,
+        companyName: validatedData.companyName ? sanitizeInput(validatedData.companyName) : undefined,
+        reason: validatedData.reason ? sanitizeInput(validatedData.reason) : undefined,
+        customHook: validatedData.customHook ? sanitizeInput(validatedData.customHook) : undefined,
+        scenario: validatedData.scenario ? sanitizeInput(validatedData.scenario) : undefined,
+        platform: validatedData.platform ? sanitizeInput(validatedData.platform) : undefined,
+      };
 
       // Check if off the rails mode is requested and user is not premium
-      if (tone === "chaos" && !isPremium) {
+      if (sanitizedData.tone === "chaos" && !sanitizedData.isPremium) {
         return res.status(402).json({
           message: "Off the Rails Mode is a premium feature. Upgrade to unlock wildly creative DMs!",
           requiresPremium: true,
@@ -82,19 +101,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Determine user tier for model configuration
-      const userTier: "Free" | "Lite" | "Pro" = isPremium ? "Pro" : "Free";
+      const userTier: "Free" | "Lite" | "Pro" = sanitizedData.isPremium ? "Pro" : "Free";
       console.log(`Using ${userTier} tier config for smart personalization`);
 
-      // Build dynamic prompt
+      // Build dynamic prompt using sanitized data
       const prompt = buildPersonalizedPrompt({
-        recipientName,
-        recipientRole,
-        companyName,
-        reason,
-        customHook,
-        tone,
-        scenario,
-        platform
+        recipientName: sanitizedData.recipientName,
+        recipientRole: sanitizedData.recipientRole,
+        companyName: sanitizedData.companyName,
+        reason: sanitizedData.reason,
+        customHook: sanitizedData.customHook,
+        tone: sanitizedData.tone,
+        scenario: sanitizedData.scenario,
+        platform: sanitizedData.platform
       });
 
       const generatedMessage = await generatePersonalizedDM(prompt, userTier);
@@ -105,9 +124,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Error in /api/generate-dm endpoint:", error);
+      
+      // Handle Zod validation errors
+      if (error.name === "ZodError") {
+        return res.status(400).json({ 
+          error: "Invalid input data",
+          message: "Please check your input and try again.",
+          details: error.errors,
+          success: false 
+        });
+      }
+      
       res.status(500).json({ 
         error: "Failed to generate DM", 
-        message: error.message,
+        message: sanitizeErrorForClient(error),
         success: false 
       });
     }

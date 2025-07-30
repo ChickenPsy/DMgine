@@ -1,8 +1,14 @@
 import OpenAI from "openai";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+// SECURITY: Ensure OpenAI API key is available and never exposed to client
+if (!process.env.OPENAI_API_KEY) {
+  console.error("SECURITY WARNING: OPENAI_API_KEY environment variable is missing!");
+  throw new Error("OpenAI API key is required for server operation");
+}
+
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
+  apiKey: process.env.OPENAI_API_KEY
 });
 
 type UserTier = "Free" | "Lite" | "Pro";

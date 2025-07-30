@@ -1,10 +1,79 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { validateEnvironmentSecurity, sanitizeErrorForClient } from "./security-check";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Run security validation on startup
+try {
+  validateEnvironmentSecurity();
+} catch (error) {
+  console.error('Security validation failed:', error);
+  process.exit(1);
+}
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.gstatic.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.openai.com", "wss://localhost:*", "ws://localhost:*"],
+    },
+  },
+}));
+
+// CORS configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.REPLIT_DEV_DOMAIN, /\.replit\.app$/] 
+    : ['http://localhost:5173', 'http://localhost:5000'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+// Rate limiting for API routes
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute per IP
+  message: { 
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: 60 
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to specific routes
+app.use('/api/generate-dm', apiLimiter);
+app.use('/api/generate', apiLimiter);
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// Session configuration with secure settings - simplified for now
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'fallback-dev-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  name: 'dmgine.sid', // Custom session name for security
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    httpOnly: true, // Prevent XSS attacks
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+  },
+  rolling: true // Reset expiration on each request
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -41,10 +110,23 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    
+    // Sanitize error message for client to prevent information leakage
+    const sanitizedMessage = sanitizeErrorForClient(err);
+    
+    // Log full error on server for debugging (server-side only)
+    console.error('Server error:', {
+      status,
+      message: err.message,
+      stack: err.stack,
+      url: _req.url,
+      method: _req.method
+    });
 
-    res.status(status).json({ message });
-    throw err;
+    res.status(status).json({ 
+      message: sanitizedMessage,
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error'
+    });
   });
 
   // importantly only setup vite in development and after
