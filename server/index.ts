@@ -49,7 +49,10 @@ app.use(helmet({
         "https://firestore.googleapis.com",
         "https://apis.google.com",         // ADD THIS
         "https://www.google.com",          // ADD THIS
-        "https://accounts.google.com"      // ADD THIS
+        "https://accounts.google.com",      // ADD THIS
+        "https://content-firebaseremoteconfig.googleapis.com", // For Firebase Remote Config
+        "https://firebase-settings.googleapis.com",           // For Firebase settings
+        "https://www.google-analytics.com",                   // If you use Analytics
       ],
       styleSrc: [
         "'self'",
