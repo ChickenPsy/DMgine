@@ -28,25 +28,19 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       scriptSrc: [
         "'self'",
-        "'unsafe-inline'",
+        "'unsafe-inline'", 
         "'unsafe-eval'",
-        "https://www.gstatic.com",
-        "https://www.googleapis.com",
-        "https://www.gstatic.cn",
-        "https://www.google.com",
-        "https://firebase.google.com",
-        `https://${process.env.VITE_FIREBASE_PROJECT_ID || 'dmgine-f5b08'}.firebaseapp.com`,
-        "https://firebaseapp.com",
+        "https://*.googleapis.com",
+        "https://*.google.com", 
+        "https://*.gstatic.com",
         "https://*.firebaseapp.com",
         "https://replit.com"
       ],
       connectSrc: [
         "'self'",
-        "https://www.googleapis.com",
-        "https://firebase.googleapis.com",
-        "https://identitytoolkit.googleapis.com",
-        "https://securetoken.googleapis.com",
-        "https://firestore.googleapis.com"
+        "https://*.googleapis.com",
+        "https://*.google.com",
+        "https://*.firebaseapp.com"
       ],
       styleSrc: [
         "'self'",

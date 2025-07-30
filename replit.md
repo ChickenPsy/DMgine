@@ -14,7 +14,8 @@ This is a modern React-based web application that generates personalized direct 
 ✓ **Security Validation**: Added startup environment variable validation and error sanitization
 ✓ **Drizzle Best Practices**: Updated DATABASE_URL format for secure Neon SSL connections and documented production-ready config
 ✓ **Session Store Optimization**: Configured PostgreSQL session store for production with memory store fallback for development to prevent memory leaks
-✓ **Content Security Policy**: Implemented looser server-side CSP with comprehensive Firebase domain support including wildcard googleapis.com patterns, firebaseapp.com domains, and proper frame sources for authentication popups
+✓ **Content Security Policy**: Updated CSP with wildcard domain patterns for Firebase services including 'unsafe-inline'/'unsafe-eval' for full authentication compatibility
+✓ **Dark Mode Theme**: Added ThemeProvider with dark mode enabled by default for comfortable viewing experience
 
 ## User Preferences
 
