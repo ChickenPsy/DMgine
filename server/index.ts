@@ -21,18 +21,10 @@ try {
   process.exit(1);
 }
 
-// Security middleware
+// Security middleware - disable CSP and frame options for Firebase
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.gstatic.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://api.openai.com", "wss://localhost:*", "ws://localhost:*"],
-    },
-  },
+  contentSecurityPolicy: false, // Disable server-side CSP to use HTML meta tag instead
+  frameguard: false, // Disable X-Frame-Options to allow Firebase auth popups
 }));
 
 // CORS configuration
