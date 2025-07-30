@@ -45,6 +45,7 @@ export default function Home() {
   const [optionalHook, setOptionalHook] = useState("");
   const [useCase, setUseCase] = useState("");
   const [platform, setPlatform] = useState("");
+  const [isSigningIn, setIsSigningIn] = useState(false);
   
   const { toast } = useToast();
 
@@ -200,6 +201,9 @@ export default function Home() {
   };
 
   const handleSignIn = async () => {
+    if (isSigningIn) return; // Prevent double-click
+    
+    setIsSigningIn(true);
     try {
       await signInWithGoogle();
       toast({
@@ -217,6 +221,8 @@ export default function Home() {
         description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -264,9 +270,18 @@ export default function Home() {
                 <h3 className="text-lg font-semibold mb-2">Sign in for more DMs</h3>
                 <p className="text-sm text-muted-foreground">Get 10 DMs per day when you sign in with Google</p>
               </div>
-              <Button onClick={handleSignIn} variant="default">
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign in
+              <Button onClick={handleSignIn} variant="default" disabled={isSigningIn}>
+                {isSigningIn ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign in
+                  </>
+                )}
               </Button>
             </div>
             {/* Usage counter positioned in bottom-right */}
