@@ -35,7 +35,9 @@ app.use(helmet({
         "https://*.googleapis.com",        // Added wildcard
         "https://*.firebaseapp.com",       // Added Firebase apps
         "https://firebase.google.com",
-        "https://replit.com"               // Added for your banner
+        "https://replit.com",              // Added for your banner
+        "https://apis.google.com",         // ADD THIS
+        "https://www.google.com"           // ADD THIS
       ],
       connectSrc: [
         "'self'",
@@ -44,7 +46,10 @@ app.use(helmet({
         "https://*.firebaseapp.com",       // Added Firebase apps
         "https://identitytoolkit.googleapis.com",
         "https://securetoken.googleapis.com",
-        "https://firestore.googleapis.com"
+        "https://firestore.googleapis.com",
+        "https://apis.google.com",         // ADD THIS
+        "https://www.google.com",          // ADD THIS
+        "https://accounts.google.com"      // ADD THIS
       ],
       styleSrc: [
         "'self'",
