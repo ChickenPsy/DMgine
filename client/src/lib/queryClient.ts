@@ -7,25 +7,6 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Function to get CSRF token
-let csrfToken: string | null = null;
-
-async function getCsrfToken(): Promise<string> {
-  if (!csrfToken) {
-    try {
-      const response = await fetch('/api/csrf-token', {
-        credentials: 'include'
-      });
-      const data = await response.json();
-      csrfToken = data.csrfToken;
-    } catch (error) {
-      console.warn('Failed to fetch CSRF token:', error);
-      csrfToken = ''; // Fallback for non-CSRF routes
-    }
-  }
-  return csrfToken || '';
-}
-
 export async function apiRequest(
   method: string,
   url: string,
@@ -36,14 +17,6 @@ export async function apiRequest(
   
   if (data) {
     headers["Content-Type"] = "application/json";
-  }
-  
-  // Add CSRF token for POST/PUT/DELETE requests
-  if (method !== 'GET') {
-    const token = await getCsrfToken();
-    if (token) {
-      headers["X-CSRF-Token"] = token;
-    }
   }
 
   // Add streaming header if requested
