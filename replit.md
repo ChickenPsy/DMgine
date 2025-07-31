@@ -21,6 +21,8 @@ This is a modern React-based web application that generates personalized direct 
 ✓ **Deployment Fixes**: Resolved top-level await compatibility issues for production deployment by updating TypeScript target to ES2020 and fixing Firebase initialization code
 ✓ **Account Creation Fixes**: Resolved infinite loading state issue with comprehensive timeout handling, request deduplication, enhanced form validation, and proper error handling to prevent UI freezing during authentication
 ✓ **Firebase WebChannel Fixes**: Completely resolved WebChannel RPC 'Listen' stream transport errors by simplifying Firebase configuration, removing complex retry logic, eliminating emulator connection code, and streamlining CSP policies for stable Firestore connectivity
+✓ **Stripe ES Module Fix**: Fixed dynamic require() error by converting Stripe server imports from CommonJS require() to ES module dynamic import, resolving Vite bundling compatibility issues
+✓ **Daily Usage Tracking**: Implemented proper daily usage counter for authenticated users (10 DMs/day) that displays correctly after login, replacing the missing usage counter issue
 
 ## User Preferences
 

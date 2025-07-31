@@ -200,7 +200,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('Stripe secret key not configured');
       }
       
-      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      const { default: Stripe } = await import('stripe');
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2024-06-20'
+      });
       
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
