@@ -165,8 +165,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
       console.log("Starting account creation for:", email);
       const user = await signUpWithEmail(email, password, displayName);
       
+      console.log("signUpWithEmail completed, user:", user);
+      console.log("requestInProgress.current:", requestInProgress.current);
+      
       if (user && requestInProgress.current) {
         console.log("Account created successfully:", user.uid);
+        console.log("Setting user in store...");
         
         // Clear timeout
         if (timeoutRef.current) {
@@ -174,20 +178,46 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
           timeoutRef.current = null;
         }
         
-        userStore.setFirebaseUser(user);
+        try {
+          userStore.setFirebaseUser(user);
+          console.log("User set in store successfully");
+        } catch (storeError) {
+          console.error("Error setting user in store:", storeError);
+        }
+        
+        console.log("Setting success state...");
         setIsSuccess(true);
         
+        console.log("Showing success toast...");
         toast({
           title: "Account created!",
           description: "Welcome! You can now create unlimited DMs.",
         });
         
-        // Small delay to show success state
+        console.log("Setting timeout for modal close...");
+        // Small delay to show success state, then immediately execute callbacks
         setTimeout(() => {
-          onSuccess();
-          onClose();
-          resetForm();
-        }, 1500);
+          console.log("Executing success callbacks...");
+          try {
+            resetForm();
+            console.log("resetForm() called successfully");
+            onSuccess();
+            console.log("onSuccess() called successfully");
+            onClose();
+            console.log("onClose() called successfully");
+          } catch (callbackError) {
+            console.error("Error in success callbacks:", callbackError);
+            // Force close the modal even if callbacks fail
+            try {
+              resetForm();
+              onClose();
+            } catch (forceCloseError) {
+              console.error("Failed to force close modal:", forceCloseError);
+            }
+          }
+        }, 1000);
+      } else {
+        console.warn("User creation failed or request was cancelled:", { user: !!user, requestInProgress: requestInProgress.current });
       }
     } catch (error: any) {
       console.error("Account creation failed:", error);
