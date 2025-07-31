@@ -71,11 +71,11 @@ export interface UserProfile {
   createdAt: string;
 }
 
-// Simple sign up function with minimal error handling
+// FIXED: Simple sign up function - returns immediately after auth, handles Firestore async
 export const signUpWithEmail = async (email: string, password: string, displayName?: string): Promise<User> => {
   try {
     console.log("Creating account with email:", email);
-    
+
     // Check Firebase configuration
     if (!import.meta.env.VITE_FIREBASE_API_KEY || !import.meta.env.VITE_FIREBASE_PROJECT_ID) {
       throw new Error('Firebase configuration is missing. Please check environment variables.');
@@ -83,27 +83,30 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
 
     const result = await createUserWithEmailAndPassword(auth, email, password);
     const user = result.user;
-    
+
     console.log("Firebase user created:", user.uid);
-    
+
     // Update display name if provided
     if (displayName) {
       await updateProfile(user, { displayName });
     }
-    
-    // Create user profile in Firestore (simple approach)
-    try {
-      await createOrUpdateUserProfile(user);
-      console.log("User profile created in Firestore");
-    } catch (profileError) {
-      console.warn("Failed to create user profile in Firestore:", profileError);
-      // Don't throw - user account was created successfully
-    }
-    
+
+    // Create user profile in background - don't wait for it
+    createOrUpdateUserProfile(user)
+      .then(() => {
+        console.log("User profile created in Firestore (background)");
+      })
+      .catch((profileError) => {
+        console.warn("Failed to create user profile in Firestore:", profileError);
+      });
+
+    // Return user immediately - don't wait for Firestore
+    console.log("Returning user immediately");
     return user;
+
   } catch (error: any) {
     console.error("Sign-up error:", error);
-    
+
     // Handle specific Firebase auth errors
     if (error.code === 'auth/email-already-in-use') {
       throw new Error('This email is already registered. Please sign in instead.');
@@ -116,34 +119,36 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
     } else if (error.code === 'auth/network-request-failed') {
       throw new Error('Network error. Please check your internet connection and try again.');
     }
-    
+
     throw new Error(error.message || 'An unexpected error occurred during account creation.');
   }
 };
 
-// Simple sign in function
+// FIXED: Simple sign in function - same pattern
 export const signInWithEmail = async (email: string, password: string): Promise<User> => {
   try {
     console.log("Signing in with email:", email);
-    
+
     const result = await signInWithEmailAndPassword(auth, email, password);
     const user = result.user;
-    
+
     console.log("Sign-in successful:", user.email);
-    
-    // Update user profile (simple approach)
-    try {
-      await createOrUpdateUserProfile(user);
-      console.log("User profile updated in Firestore");
-    } catch (profileError) {
-      console.warn("Failed to update user profile in Firestore:", profileError);
-      // Don't throw - sign-in was successful
-    }
-    
+
+    // Update user profile in background - don't wait for it
+    createOrUpdateUserProfile(user)
+      .then(() => {
+        console.log("User profile updated in Firestore (background)");
+      })
+      .catch((profileError) => {
+        console.warn("Failed to update user profile in Firestore:", profileError);
+      });
+
+    // Return user immediately
     return user;
+
   } catch (error: any) {
     console.error("Sign-in error:", error);
-    
+
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
       throw new Error('Invalid email or password. Please check your credentials.');
     } else if (error.code === 'auth/user-not-found') {
@@ -153,7 +158,7 @@ export const signInWithEmail = async (email: string, password: string): Promise<
     } else if (error.code === 'auth/too-many-requests') {
       throw new Error('Too many failed attempts. Please try again later.');
     }
-    
+
     throw new Error(error.message || 'An unexpected error occurred during sign-in.');
   }
 };
@@ -165,13 +170,13 @@ export const resetPassword = async (email: string): Promise<void> => {
     console.log("Password reset email sent successfully");
   } catch (error: any) {
     console.error("Password reset error:", error);
-    
+
     if (error.code === 'auth/user-not-found') {
       throw new Error('No account found with this email address.');
     } else if (error.code === 'auth/invalid-email') {
       throw new Error('Please enter a valid email address.');
     }
-    
+
     throw new Error(error.message || 'An unexpected error occurred.');
   }
 };
@@ -189,10 +194,10 @@ export const signOutUser = async () => {
 // Simple Firestore operations without complex retry logic
 export const createOrUpdateUserProfile = async (user: User): Promise<UserProfile> => {
   const userRef = doc(db, 'users', user.uid);
-  
+
   try {
     const userDoc = await getDoc(userRef);
-    
+
     const userData: UserProfile = {
       uid: user.uid,
       name: user.displayName || user.email?.split('@')[0] || '',
@@ -201,19 +206,19 @@ export const createOrUpdateUserProfile = async (user: User): Promise<UserProfile
       isPremium: userDoc.exists() ? userDoc.data().isPremium || false : false,
       createdAt: userDoc.exists() ? userDoc.data().createdAt : new Date().toISOString(),
     };
-    
+
     await setDoc(userRef, userData, { merge: true });
-    
+
     return userData;
   } catch (error: any) {
     console.error('Error creating/updating user profile:', error);
-    
+
     if (error.code === 'permission-denied') {
       throw new Error('Permission denied. Please check your Firestore security rules.');
     } else if (error.code === 'unavailable') {
       throw new Error('Unable to connect to the database. Please try again.');
     }
-    
+
     throw error;
   }
 };
@@ -223,18 +228,18 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   try {
     const userRef = doc(db, 'users', uid);
     const userDoc = await getDoc(userRef);
-    
+
     if (userDoc.exists()) {
       return userDoc.data() as UserProfile;
     }
     return null;
   } catch (error: any) {
     console.error("Error fetching user profile:", error);
-    
+
     if (error.code === 'permission-denied') {
       throw new Error('Permission denied. Please check your authentication.');
     }
-    
+
     return null;
   }
 };
