@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, setPersistence, browserLocalPersistence, updateProfile, sendPasswordResetEmail } from "firebase/auth";
-import { getFirestore, doc, getDoc, setDoc, enableNetwork } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, enableNetwork, connectFirestoreEmulator, disableNetwork } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -39,6 +39,16 @@ try {
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Ensure we're not connecting to emulator in production
+if (process.env.NODE_ENV === 'development' && import.meta.env.VITE_FIREBASE_USE_EMULATOR === 'true') {
+  try {
+    connectFirestoreEmulator(db, 'localhost', 8080);
+    console.log("Connected to Firestore emulator");
+  } catch (error) {
+    console.log("Firestore emulator already connected or not available");
+  }
+}
+
 // Configure auth persistence for better session handling
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
@@ -48,26 +58,71 @@ setPersistence(auth, browserLocalPersistence)
     console.warn("Failed to set auth persistence:", error);
   });
 
-// Ensure Firestore network is enabled with retry logic
-const enableFirestoreNetwork = async (retries = 3) => {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await enableNetwork(db);
-      console.log("Firestore network enabled successfully");
-      break;
-    } catch (error) {
-      console.warn(`Failed to enable Firestore network (attempt ${i + 1}/${retries}):`, error);
-      if (i === retries - 1) {
-        console.error("Failed to enable Firestore network after all retries");
-      } else {
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+// Enhanced Firestore network management with WebChannel optimization
+const initializeFirestoreNetwork = async () => {
+  try {
+    // First, ensure network is properly disabled and re-enabled to reset connections
+    await disableNetwork(db);
+    console.log("Firestore network disabled for reset");
+    
+    // Wait a moment before re-enabling
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Re-enable with retry logic
+    const enableFirestoreNetwork = async (retries = 5) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          await enableNetwork(db);
+          console.log("Firestore network enabled successfully");
+          return true;
+        } catch (error: any) {
+          console.warn(`Failed to enable Firestore network (attempt ${i + 1}/${retries}):`, error);
+          
+          // Handle specific WebChannel errors
+          if (error.code === 'failed-precondition' || error.message?.includes('WebChannel')) {
+            console.log("WebChannel connection issue detected, retrying with exponential backoff");
+          }
+          
+          if (i === retries - 1) {
+            console.error("Failed to enable Firestore network after all retries");
+            return false;
+          } else {
+            // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+          }
+        }
       }
-    }
+      return false;
+    };
+    
+    return await enableFirestoreNetwork();
+  } catch (error) {
+    console.error("Error initializing Firestore network:", error);
+    return false;
   }
 };
 
-enableFirestoreNetwork();
+// Wait for auth state to be ready before initializing Firestore
+let networkInitialized = false;
+const initializeOnAuth = () => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (!networkInitialized) {
+      networkInitialized = true;
+      unsubscribe(); // Only run once
+      
+      if (user) {
+        console.log("User authenticated, initializing Firestore network");
+        await initializeFirestoreNetwork();
+      } else {
+        console.log("No user authenticated, enabling Firestore network for public access");
+        await initializeFirestoreNetwork();
+      }
+    }
+  });
+};
+
+// Initialize on load
+initializeOnAuth();
 
 // Email/Password Authentication - No provider needed
 
@@ -281,7 +336,35 @@ export const signOutUser = async () => {
   }
 };
 
-// Create or update user profile in Firestore with offline handling
+// Enhanced Firestore operation with WebChannel error handling
+const withFirestoreRetry = async <T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      console.warn(`Firestore operation failed (attempt ${i + 1}/${maxRetries}):`, error);
+      
+      // Handle specific WebChannel and connection errors
+      if (error.code === 'unavailable' || 
+          error.code === 'failed-precondition' || 
+          error.message?.includes('WebChannel') ||
+          error.message?.includes('transport') ||
+          error.message?.includes('RPC')) {
+        
+        if (i < maxRetries - 1) {
+          // Wait with exponential backoff before retry
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+          continue;
+        }
+      }
+      
+      throw error;
+    }
+  }
+  throw new Error('Max retries exceeded');
+};
+
+// Create or update user profile in Firestore with enhanced error handling
 export const createOrUpdateUserProfile = async (user: User): Promise<UserProfile> => {
   const userRef = doc(db, 'users', user.uid);
   
@@ -291,50 +374,57 @@ export const createOrUpdateUserProfile = async (user: User): Promise<UserProfile
       throw new Error('You appear to be offline. Please check your connection and try again.');
     }
 
-    // Add a small delay to ensure Firebase has fully initialized
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const userDoc = await getDoc(userRef);
-    
-    const userData: UserProfile = {
-      uid: user.uid,
-      name: user.displayName || user.email?.split('@')[0] || '',
-      email: user.email || '',
-      photo: '', // No photo for email/password auth
-      isPremium: userDoc.exists() ? userDoc.data().isPremium || false : false,
-      createdAt: userDoc.exists() ? userDoc.data().createdAt : new Date().toISOString(),
-    };
-    
-    // Update Firestore with latest user data
-    await setDoc(userRef, userData, { merge: true });
+    // Ensure user is authenticated before Firestore operations
+    if (!user.emailVerified && user.email) {
+      console.log('User email not verified, but proceeding with profile creation');
+    }
+
+    const userData = await withFirestoreRetry(async () => {
+      const userDoc = await getDoc(userRef);
+      
+      const profileData: UserProfile = {
+        uid: user.uid,
+        name: user.displayName || user.email?.split('@')[0] || '',
+        email: user.email || '',
+        photo: '', // No photo for email/password auth
+        isPremium: userDoc.exists() ? userDoc.data().isPremium || false : false,
+        createdAt: userDoc.exists() ? userDoc.data().createdAt : new Date().toISOString(),
+      };
+      
+      // Update Firestore with latest user data
+      await setDoc(userRef, profileData, { merge: true });
+      
+      return profileData;
+    });
     
     return userData;
   } catch (error: any) {
     console.error('Error creating/updating user profile:', error);
     
-    // Handle specific Firestore errors
+    // Handle specific Firestore errors with user-friendly messages
     if (error.code === 'unavailable' || error.code === 'failed-precondition') {
       throw new Error('Unable to connect to our servers. Please check your internet connection and try again.');
     } else if (error.code === 'permission-denied') {
-      throw new Error('Permission denied. Please sign out and sign in again.');
+      throw new Error('Access denied. Please check your Firestore security rules or sign out and sign in again.');
+    } else if (error.message?.includes('WebChannel') || error.message?.includes('transport')) {
+      throw new Error('Connection error. Please refresh the page and try again.');
+    } else if (error.message?.includes('timeout')) {
+      throw new Error('Request timed out. Please check your connection and try again.');
     }
     
     throw error;
   }
 };
 
-// Get user premium status with retry logic and offline handling
+// Get user premium status with enhanced WebChannel error handling
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
-  const maxRetries = 3;
-  let retryCount = 0;
-  
-  while (retryCount < maxRetries) {
-    try {
-      // Check if we're online
-      if (!navigator.onLine) {
-        throw new Error('You appear to be offline. Please check your connection and try again.');
-      }
+  try {
+    // Check if we're online
+    if (!navigator.onLine) {
+      throw new Error('You appear to be offline. Please check your connection and try again.');
+    }
 
+    const result = await withFirestoreRetry(async () => {
       const userRef = doc(db, 'users', uid);
       const userDoc = await getDoc(userRef);
       
@@ -342,36 +432,41 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
         return userDoc.data() as UserProfile;
       }
       return null;
-    } catch (error: any) {
-      console.error("Error fetching user profile:", error);
-      
-      retryCount++;
-      
-      // Handle specific errors
-      if (error.code === 'unavailable' && retryCount < maxRetries) {
-        // Wait before retrying (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-        continue;
-      } else if (error.code === 'unavailable') {
-        throw new Error('Unable to connect to our servers. Please check your internet connection and try again.');
-      } else if (error.code === 'permission-denied') {
-        throw new Error('Permission denied. Please sign out and sign in again.');
-      }
-      
-      return null;
+    });
+    
+    return result;
+  } catch (error: any) {
+    console.error("Error fetching user profile:", error);
+    
+    // Handle specific errors with user-friendly messages
+    if (error.code === 'unavailable' || error.code === 'failed-precondition') {
+      throw new Error('Unable to connect to our servers. Please check your internet connection and try again.');
+    } else if (error.code === 'permission-denied') {
+      throw new Error('Access denied. Please check your authentication status.');
+    } else if (error.message?.includes('WebChannel') || error.message?.includes('transport')) {
+      throw new Error('Connection error. Please refresh the page and try again.');
     }
+    
+    return null;
   }
-  
-  return null;
 };
 
-// Update user premium status
+// Update user premium status with enhanced error handling
 export const updateUserPremiumStatus = async (uid: string, isPremium: boolean): Promise<void> => {
   try {
-    const userRef = doc(db, 'users', uid);
-    await setDoc(userRef, { isPremium }, { merge: true });
-  } catch (error) {
+    await withFirestoreRetry(async () => {
+      const userRef = doc(db, 'users', uid);
+      await setDoc(userRef, { isPremium }, { merge: true });
+    });
+  } catch (error: any) {
     console.error("Error updating premium status:", error);
+    
+    if (error.code === 'permission-denied') {
+      throw new Error('Permission denied. You may not have access to update this information.');
+    } else if (error.code === 'unavailable' || error.code === 'failed-precondition') {
+      throw new Error('Unable to connect to our servers. Please check your internet connection and try again.');
+    }
+    
     throw error;
   }
 };

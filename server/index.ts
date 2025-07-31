@@ -51,8 +51,11 @@ app.use(helmet({
         "https://securetoken.googleapis.com",
         "https://www.googleapis.com",
         "wss://*.firebaseio.com",
-        "wss://*.googleapis.com"
+        "wss://*.googleapis.com",
+        "ws://*.firebaseio.com",
+        "ws://*.googleapis.com"
       ],
+      workerSrc: ["'self'", "blob:"],
       styleSrc: [
         "'self'",
         "'unsafe-inline'",
