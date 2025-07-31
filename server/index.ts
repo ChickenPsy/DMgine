@@ -42,20 +42,12 @@ app.use(helmet({
       connectSrc: [
         "'self'",
         "https://*.googleapis.com",
-        "https://*.google.com",
         "https://*.firebaseapp.com",
-        "https://accounts.google.com",
         "https://firebase.googleapis.com",
         "https://firestore.googleapis.com",
         "https://identitytoolkit.googleapis.com",
-        "https://securetoken.googleapis.com",
-        "https://www.googleapis.com",
-        "wss://*.firebaseio.com",
-        "wss://*.googleapis.com",
-        "ws://*.firebaseio.com",
-        "ws://*.googleapis.com"
+        "https://securetoken.googleapis.com"
       ],
-      workerSrc: ["'self'", "blob:"],
       styleSrc: [
         "'self'",
         "'unsafe-inline'",

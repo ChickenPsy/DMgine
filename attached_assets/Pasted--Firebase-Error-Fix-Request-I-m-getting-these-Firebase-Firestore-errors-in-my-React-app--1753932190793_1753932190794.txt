@@ -1,0 +1,50 @@
+# Firebase Error Fix Request
+
+I'm getting these Firebase/Firestore errors in my React app:
+
+```
+Failed to load resource: the server responded with a status of 400 ()
+Firestore (12.0.0): WebChannelConnection RPC 'Listen' stream 0x76ce9202 transport errored. Name: undefined Message: undefined
+```
+
+## Current Issues:
+1. Multiple 400 status responses from Firestore endpoints
+2. WebChannelConnection RPC 'Listen' stream errors with "undefined" messages
+3. Transport errors when trying to connect to Firestore
+
+## What I need you to fix:
+
+### 1. Environment Variables Setup
+- Check if my `.env` file has all required Firebase variables
+- Create/update `.env` with proper VITE_FIREBASE_* variables
+- Make sure VITE_FIREBASE_USE_EMULATOR is set to false for production
+
+### 2. Firebase Configuration Issues
+- Fix the Firebase initialization in my `lib/firebase.ts` file
+- Remove problematic emulator connection logic that might be causing transport errors
+- Add better error handling for Firestore operations
+- Fix any auth state management issues
+
+### 3. Firestore Security Rules
+- Check if my Firestore rules are properly configured for authenticated users
+- Make sure users can read/write their own documents in the `users` collection
+
+### 4. Code Improvements Needed:
+- Better error handling for network issues
+- Remove any problematic retry logic that might cause WebChannel errors
+- Simplify Firestore operations to prevent transport errors
+- Add proper logging to debug connection issues
+
+## Files that likely need attention:
+- `lib/firebase.ts` (main Firebase config)
+- `.env` (environment variables)
+- Firestore security rules (in Firebase Console)
+- Any auth state management code
+
+## Expected Outcome:
+- No more 400 errors from Firestore
+- No more WebChannelConnection transport errors  
+- Smooth authentication and Firestore operations
+- Proper error messages instead of "undefined" errors
+
+Please review my Firebase setup and fix these connection/transport issues. Focus on making the Firebase connection stable and removing any problematic network code that's causing the WebChannel errors.
