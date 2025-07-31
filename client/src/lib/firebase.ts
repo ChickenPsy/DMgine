@@ -66,25 +66,46 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
 
     console.log("Creating account with email:", email);
     
-    const result = await createUserWithEmailAndPassword(auth, email, password);
+    // Add timeout promise to prevent hanging requests
+    const signUpPromise = createUserWithEmailAndPassword(auth, email, password);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout: Account creation took too long')), 30000);
+    });
+    
+    const result = await Promise.race([signUpPromise, timeoutPromise]) as any;
     const user = result.user;
+    
+    console.log("Firebase user created:", user.uid);
     
     // Update display name if provided
     if (displayName) {
+      console.log("Updating display name:", displayName);
       await updateProfile(user, { displayName });
     }
     
     console.log("Account created successfully:", user.email);
     
-    // Create or update user profile in Firestore
-    await createOrUpdateUserProfile(user);
+    // Create or update user profile in Firestore with timeout
+    try {
+      const profilePromise = createOrUpdateUserProfile(user);
+      const profileTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Firestore profile creation timeout')), 10000);
+      });
+      
+      await Promise.race([profilePromise, profileTimeoutPromise]);
+      console.log("User profile created in Firestore");
+    } catch (profileError) {
+      console.warn("Failed to create user profile in Firestore, but user account was created:", profileError);
+      // Don't throw here - the user account was successfully created
+    }
     
     return user;
   } catch (error: any) {
     console.error("Detailed sign-up error:", {
       code: error.code,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
+      name: error.name
     });
     
     // Handle specific Firebase auth errors with better messaging
@@ -98,11 +119,18 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
       throw new Error('Email/password authentication is not enabled for this project.');
     } else if (error.code === 'auth/invalid-api-key') {
       throw new Error('Invalid Firebase API key. Please check your configuration.');
+    } else if (error.code === 'auth/network-request-failed') {
+      throw new Error('Network error. Please check your internet connection and try again.');
+    } else if (error.code === 'auth/too-many-requests') {
+      throw new Error('Too many account creation attempts. Please try again later.');
     } else if (error.message.includes('Firebase configuration')) {
       throw new Error('Firebase is not properly configured. Please check environment variables.');
+    } else if (error.message.includes('timeout')) {
+      throw new Error('Request took too long. Please check your connection and try again.');
     }
     
-    throw error;
+    // Fallback error message
+    throw new Error(error.message || 'An unexpected error occurred during account creation. Please try again.');
   }
 };
 
@@ -110,20 +138,38 @@ export const signInWithEmail = async (email: string, password: string): Promise<
   try {
     console.log("Signing in with email:", email);
     
-    const result = await signInWithEmailAndPassword(auth, email, password);
+    // Add timeout for sign-in request
+    const signInPromise = signInWithEmailAndPassword(auth, email, password);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout: Sign-in took too long')), 15000);
+    });
+    
+    const result = await Promise.race([signInPromise, timeoutPromise]) as any;
     const user = result.user;
     
     console.log("Sign-in successful:", user.email);
     
-    // Create or update user profile in Firestore
-    await createOrUpdateUserProfile(user);
+    // Create or update user profile in Firestore with timeout
+    try {
+      const profilePromise = createOrUpdateUserProfile(user);
+      const profileTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Firestore profile update timeout')), 8000);
+      });
+      
+      await Promise.race([profilePromise, profileTimeoutPromise]);
+      console.log("User profile updated in Firestore");
+    } catch (profileError) {
+      console.warn("Failed to update user profile in Firestore, but sign-in was successful:", profileError);
+      // Don't throw here - the sign-in was successful
+    }
     
     return user;
   } catch (error: any) {
     console.error("Detailed sign-in error:", {
       code: error.code,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
+      name: error.name
     });
     
     // Handle specific Firebase auth errors with better messaging
@@ -137,28 +183,53 @@ export const signInWithEmail = async (email: string, password: string): Promise<
       throw new Error('This account has been disabled. Please contact support.');
     } else if (error.code === 'auth/too-many-requests') {
       throw new Error('Too many failed attempts. Please try again later.');
+    } else if (error.code === 'auth/network-request-failed') {
+      throw new Error('Network error. Please check your internet connection and try again.');
+    } else if (error.message.includes('timeout')) {
+      throw new Error('Request took too long. Please check your connection and try again.');
     }
     
-    throw error;
+    // Fallback error message
+    throw new Error(error.message || 'An unexpected error occurred during sign-in. Please try again.');
   }
 };
 
 export const resetPassword = async (email: string): Promise<void> => {
   try {
-    await sendPasswordResetEmail(auth, email);
-    console.log("Password reset email sent to:", email);
+    console.log("Sending password reset email to:", email);
+    
+    // Add timeout for password reset request
+    const resetPromise = sendPasswordResetEmail(auth, email);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout: Password reset took too long')), 10000);
+    });
+    
+    await Promise.race([resetPromise, timeoutPromise]);
+    console.log("Password reset email sent successfully");
   } catch (error: any) {
-    console.error("Password reset error:", error);
+    console.error("Password reset error:", {
+      code: error.code,
+      message: error.message,
+      stack: error.stack
+    });
     
     if (error.code === 'auth/user-not-found') {
       throw new Error('No account found with this email address.');
     } else if (error.code === 'auth/invalid-email') {
       throw new Error('Please enter a valid email address.');
+    } else if (error.code === 'auth/network-request-failed') {
+      throw new Error('Network error. Please check your internet connection and try again.');
+    } else if (error.code === 'auth/too-many-requests') {
+      throw new Error('Too many reset requests. Please try again later.');
+    } else if (error.message.includes('timeout')) {
+      throw new Error('Request took too long. Please check your connection and try again.');
     }
     
-    throw error;
+    throw new Error(error.message || 'An unexpected error occurred. Please try again.');
   }
 };
+
+
 
 // Handle redirect result on page load (simplified for popup-only approach)
 export const handleRedirectResult = async (): Promise<User | null> => {
