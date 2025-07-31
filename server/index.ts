@@ -70,7 +70,12 @@ app.use(helmet({
 // CORS configuration
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.REPLIT_DEV_DOMAIN || '', /\.replit\.app$/].filter(Boolean)
+    ? [
+        process.env.REPLIT_DEV_DOMAIN || '', 
+        /\.replit\.app$/,
+        'https://dmgine.com',
+        'https://www.dmgine.com'
+      ].filter(Boolean)
     : ['http://localhost:5173', 'http://localhost:5000'],
   credentials: true,
   optionsSuccessStatus: 200
