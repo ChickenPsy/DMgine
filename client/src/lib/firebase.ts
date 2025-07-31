@@ -7,37 +7,67 @@ const firebaseConfig = {
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  // Ensure messagingSenderId is included for complete config
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "default",
 };
 
-// Initialize Firebase app with check for existing app
+// Initialize Firebase app with comprehensive error handling
 let app;
 try {
+  // Validate configuration before initialization
+  const requiredFields = ['apiKey', 'authDomain', 'projectId', 'appId'];
+  for (const field of requiredFields) {
+    if (!firebaseConfig[field as keyof typeof firebaseConfig]) {
+      throw new Error(`Missing required Firebase configuration: ${field}`);
+    }
+  }
+  
   app = initializeApp(firebaseConfig);
+  console.log("Firebase initialized successfully with project:", firebaseConfig.projectId);
 } catch (error: any) {
   if (error.code === 'app/duplicate-app') {
     // App already exists, get the existing one
     const { getApp } = require('firebase/app');
     app = getApp();
+    console.log("Using existing Firebase app instance");
   } else {
-    throw error;
+    console.error("Firebase initialization failed:", error);
+    throw new Error(`Firebase configuration error: ${error.message}`);
   }
 }
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Configure auth persistence for better session handling in Replit
-setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.warn("Failed to set auth persistence:", error);
-});
+// Configure auth persistence for better session handling
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log("Auth persistence configured successfully");
+  })
+  .catch((error) => {
+    console.warn("Failed to set auth persistence:", error);
+  });
 
-// Ensure Firestore network is enabled
-enableNetwork(db).catch((error) => {
-  console.warn("Failed to enable Firestore network:", error);
-});
+// Ensure Firestore network is enabled with retry logic
+const enableFirestoreNetwork = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await enableNetwork(db);
+      console.log("Firestore network enabled successfully");
+      break;
+    } catch (error) {
+      console.warn(`Failed to enable Firestore network (attempt ${i + 1}/${retries}):`, error);
+      if (i === retries - 1) {
+        console.error("Failed to enable Firestore network after all retries");
+      } else {
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    }
+  }
+};
+
+enableFirestoreNetwork();
 
 // Email/Password Authentication - No provider needed
 

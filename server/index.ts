@@ -21,7 +21,7 @@ try {
   process.exit(1);
 }
 
-// Security middleware with Firebase-friendly CSP
+// Security middleware with comprehensive Firebase-friendly CSP
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -33,7 +33,10 @@ app.use(helmet({
         "https://*.googleapis.com",
         "https://*.google.com", 
         "https://*.gstatic.com",
+        "https://www.gstatic.com",
+        "https://apis.google.com",
         "https://*.firebaseapp.com",
+        "https://firebase.googleapis.com",
         "https://replit.com"
       ],
       connectSrc: [
@@ -42,7 +45,13 @@ app.use(helmet({
         "https://*.google.com",
         "https://*.firebaseapp.com",
         "https://accounts.google.com",
-        "https://firebase.googleapis.com"
+        "https://firebase.googleapis.com",
+        "https://firestore.googleapis.com",
+        "https://identitytoolkit.googleapis.com",
+        "https://securetoken.googleapis.com",
+        "https://www.googleapis.com",
+        "wss://*.firebaseio.com",
+        "wss://*.googleapis.com"
       ],
       styleSrc: [
         "'self'",
@@ -56,7 +65,9 @@ app.use(helmet({
         "https://*.google.com",
         "https://accounts.google.com"
       ],
-      baseUri: ["'self'"]
+      baseUri: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
     }
   }
 }));
