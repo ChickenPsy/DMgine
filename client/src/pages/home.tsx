@@ -364,6 +364,11 @@ export default function Home() {
                 See Plans
               </Button>
             </Link>
+            <Link href="/blog">
+              <Button variant="ghost" size="lg" className="text-lg px-8 py-6 rounded-xl">
+                📚 Blog
+              </Button>
+            </Link>
           </div>
           
 
