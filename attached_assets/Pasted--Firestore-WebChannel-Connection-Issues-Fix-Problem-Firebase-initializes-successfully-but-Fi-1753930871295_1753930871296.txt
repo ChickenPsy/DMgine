@@ -1,0 +1,92 @@
+# Firestore WebChannel Connection Issues Fix
+
+## Problem
+Firebase initializes successfully but Firestore WebChannelConnection RPC 'Listen' streams are failing with 400 errors and transport errors.
+
+## Current Status
+✅ Firebase initialized successfully  
+✅ Auth persistence configured  
+❌ Firestore connection failing  
+❌ WebChannel RPC Listen streams error  
+
+## Likely Causes & Fixes
+
+### 1. Firestore Security Rules
+Check your Firestore rules in Firebase Console. Overly restrictive rules cause 400 errors:
+
+```javascript
+// Temporary test rules (CHANGE BEFORE PRODUCTION)
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+### 2. Firestore Initialization Check
+Ensure Firestore is properly initialized:
+
+```javascript
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+
+const db = getFirestore(app);
+
+// Make sure you're not accidentally connecting to emulator in production
+// Remove any connectFirestoreEmulator calls for production deployment
+```
+
+### 3. Authentication State
+The 400 errors might be due to unauthenticated requests. Ensure user is authenticated before Firestore operations:
+
+```javascript
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase-config';
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // User is signed in, safe to use Firestore
+    console.log('User authenticated:', user.uid);
+  } else {
+    // User is signed out
+    console.log('User not authenticated');
+  }
+});
+```
+
+### 4. Network Configuration
+Add additional CSP directives for WebSocket connections:
+
+```html
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  connect-src 'self' 
+    https://*.googleapis.com 
+    https://*.google.com 
+    https://firebase.googleapis.com 
+    https://firestore.googleapis.com
+    https://identitytoolkit.googleapis.com
+    wss://*.googleapis.com
+    wss://*.firebaseio.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' 
+    https://www.gstatic.com 
+    https://apis.google.com;
+  style-src 'self' 'unsafe-inline';
+">
+```
+
+### 5. Firebase Project Settings
+Verify in Firebase Console:
+- Firestore database is created and active
+- Your deployment domain is in authorized domains
+- Firestore location matches your app region
+
+## Priority Actions
+1. **Check Firestore security rules first** - most common cause of 400 errors
+2. **Verify user authentication state** before Firestore operations
+3. **Remove any emulator connections** in production code
+4. **Add WebSocket CSP permissions** for real-time listeners
+
+Please implement these fixes focusing on security rules and authentication state first.
