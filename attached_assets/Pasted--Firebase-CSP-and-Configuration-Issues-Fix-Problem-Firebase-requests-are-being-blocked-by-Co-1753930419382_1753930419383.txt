@@ -1,0 +1,64 @@
+# Firebase CSP and Configuration Issues Fix
+
+## Problem
+Firebase requests are being blocked by Content Security Policy, causing 400 errors and connection failures.
+
+## Errors Observed
+- `Failed to load resource: firestore.googleapis.com` with 400 status
+- `WebChannelConnection RPC 'Listen' stream` errors
+- `Missing descriptor or "write" for {dialogContent}`
+- CSP blocking Firebase domains
+
+## Required Fixes
+
+### 1. Update Content Security Policy
+Add to your HTML head or server headers:
+```html
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  connect-src 'self' 
+    https://*.googleapis.com 
+    https://*.google.com 
+    https://firebase.googleapis.com 
+    https://firestore.googleapis.com
+    https://identitytoolkit.googleapis.com
+    wss://*.firebaseio.com;
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' 
+    https://www.gstatic.com 
+    https://apis.google.com;
+  style-src 'self' 'unsafe-inline';
+">
+```
+
+### 2. Check Firebase Configuration
+Verify your Firebase config object has all required fields:
+```javascript
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "your-app-id"
+};
+```
+
+### 3. Firebase Initialization
+Ensure proper initialization order:
+```javascript
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+```
+
+### 4. Environment Variables
+Check that all Firebase environment variables are properly set in production deployment.
+
+### 5. Domain Whitelist
+In Firebase Console, ensure your deployment domain is added to authorized domains under Authentication > Settings > Authorized domains.
+
+Please implement these fixes to resolve the CSP blocking and Firebase connectivity issues.
