@@ -1,12 +1,19 @@
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 
 const USAGE_KEY = 'dmgine_usage';
+const DAILY_USAGE_KEY = 'dmgine_daily_usage';
 const FINGERPRINT_KEY = 'dmgine_fingerprint';
 
 interface UsageData {
   count: number;
   resetDate: string;
   fingerprint?: string;
+}
+
+interface DailyUsageData {
+  count: number;
+  date: string;
+  userId?: string;
 }
 
 export class UsageTracker {
@@ -85,6 +92,7 @@ export class UsageTracker {
 
   resetUsage(): void {
     localStorage.removeItem(USAGE_KEY);
+    localStorage.removeItem(DAILY_USAGE_KEY);
   }
 
   // Check if user has reached the free limit
@@ -95,6 +103,51 @@ export class UsageTracker {
   // Get remaining free uses
   getRemainingFreeUses(): number {
     return Math.max(0, 3 - this.getFreeUsageCount());
+  }
+
+  // Daily usage methods for authenticated users
+  private getDailyUsageData(): DailyUsageData {
+    const stored = localStorage.getItem(DAILY_USAGE_KEY);
+    if (!stored) {
+      return { count: 0, date: this.getTodayString() };
+    }
+
+    try {
+      const data: DailyUsageData = JSON.parse(stored);
+      
+      // Reset count if it's a new day
+      if (data.date !== this.getTodayString()) {
+        return { count: 0, date: this.getTodayString() };
+      }
+      
+      return data;
+    } catch {
+      return { count: 0, date: this.getTodayString() };
+    }
+  }
+
+  private saveDailyUsageData(data: DailyUsageData): void {
+    localStorage.setItem(DAILY_USAGE_KEY, JSON.stringify(data));
+  }
+
+  getDailyUsageCount(): number {
+    return this.getDailyUsageData().count;
+  }
+
+  canUseDaily(): boolean {
+    return this.getDailyUsageCount() < 10;
+  }
+
+  incrementDailyUsage(userId?: string): number {
+    const data = this.getDailyUsageData();
+    data.count += 1;
+    data.userId = userId;
+    this.saveDailyUsageData(data);
+    return data.count;
+  }
+
+  getRemainingDailyUses(): number {
+    return Math.max(0, 10 - this.getDailyUsageCount());
   }
 }
 

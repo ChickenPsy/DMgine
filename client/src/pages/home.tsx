@@ -100,7 +100,7 @@ export default function Home() {
 
   const canGenerate = () => {
     if (user.tier === 'premium') return true;
-    if (user.isAuthenticated) return true; // Authenticated users get 10/day
+    if (user.isAuthenticated) return usageTracker.canUseDaily(); // Authenticated users get 10/day
     return usageTracker.canUseFree(); // Non-authenticated get 3 free
   };
 
@@ -138,7 +138,9 @@ export default function Home() {
       
       // Track usage for non-premium users
       if (user.tier !== 'premium') {
-        if (!user.isAuthenticated) {
+        if (user.isAuthenticated) {
+          usageTracker.incrementDailyUsage(user.firebaseUser?.uid);
+        } else {
           usageTracker.incrementFreeUsage();
         }
       }
@@ -240,7 +242,9 @@ export default function Home() {
     }
     
     if (user.isAuthenticated) {
-      return <Badge variant="secondary"><User className="w-3 h-3 mr-1" />Signed In</Badge>;
+      // For authenticated users, show daily usage (10/day)
+      const remaining = usageTracker.getRemainingDailyUses();
+      return <Badge variant="secondary"><User className="w-3 h-3 mr-1" />{remaining}/10 today</Badge>;
     }
     
     const remaining = usageTracker.getRemainingFreeUses();
