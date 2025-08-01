@@ -25,9 +25,9 @@ interface GenerateDmResponse {
 }
 
 const exampleOutputs = {
-  professional: `"Hi Sarah! I noticed your recent post about marketing automation trends. Your insights on customer journey mapping really resonated with me. I'd love to connect and potentially discuss some innovative approaches my team has been exploring. Would you be open to a brief chat sometime this week?"`,
-  casual: `"Hey Alex! Really enjoyed your presentation at the tech summit last week. Your approach to scaling B2B partnerships was brilliant. I think there might be some interesting synergies between our companies - would love to grab coffee and explore potential collaboration opportunities."`,
-  chaos: `"Listen up, future business partner in crime! I've been stalking your LinkedIn (professionally, obviously) and I'm convinced we need to collaborate before the robots take over our jobs..."`,
+  professional: `"Hi Sarah! I noticed your recent post about marketing automation trends. Your insights on customer journey mapping really resonated with me. I'd love to connect and potentially discuss some innovative approaches my team has been exploring for similar businesses. Would you be open to a brief chat sometime this week?"`,
+  friendly: `"Hey Alex! Really enjoyed your presentation at the tech summit last week. Your approach to scaling B2B partnerships was brilliant. I think there might be some interesting synergies between our companies - would love to grab coffee and explore potential collaboration opportunities."`,
+  direct: `"Hi Sarah, I help small businesses increase their social media engagement by 40% on average. Based on your recent posts about customer retention challenges, I believe I can help you achieve similar results. Are you available for a 15-minute call this week?"`,
 };
 
 export default function Home() {
@@ -197,7 +197,7 @@ export default function Home() {
       await navigator.clipboard.writeText(generatedMessage);
       toast({
         title: "Copied! 📋",
-        description: "Your DM is ready to paste.",
+        description: "Your business message is ready to paste.",
       });
     } catch (error) {
       toast({
@@ -218,7 +218,7 @@ export default function Home() {
     setShowAuthModal(false);
     toast({
       title: "Welcome! 🎉",
-      description: "You're now signed in and ready to generate unlimited DMs.",
+      description: "You're now signed in and ready to generate professional messages.",
     });
   };
 
@@ -247,7 +247,7 @@ export default function Home() {
     if (user.isAuthenticated) {
       // For authenticated users, show daily usage (10/day)
       const remaining = usageTracker.getRemainingDailyUses();
-      return <Badge variant="secondary"><User className="w-3 h-3 mr-1" />{remaining}/10 today</Badge>;
+      return <Badge variant="secondary"><User className="w-3 h-3 mr-1" />{remaining}/10 messages today</Badge>;
     }
     
     const remaining = usageTracker.getRemainingFreeUses();
@@ -265,8 +265,8 @@ export default function Home() {
           <div className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg border relative">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold mb-2">Sign in for more DMs</h3>
-                <p className="text-sm text-muted-foreground">Get 10 DMs per day when you sign in with Google</p>
+                <h3 className="text-lg font-semibold mb-2">Sign in for more messages</h3>
+                <p className="text-sm text-muted-foreground">Get 10 business outreach messages per day when you sign in</p>
               </div>
               <Button onClick={handleSignIn} variant="default" disabled={isSigningIn}>
                 {isSigningIn ? (
@@ -342,11 +342,10 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-2xl md:text-3xl font-semibold mb-4 text-foreground">
-            AI Cold DMs That Actually Get Replies
+            Stop Spending Hours Crafting the Perfect Business DM
           </p>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Generate personalized, high-converting messages for any platform. 
-            No more awkward intros or ignored outreach.
+            Your AI social media assistant writes professional outreach messages in seconds - so you can focus on running your business
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -360,7 +359,7 @@ export default function Home() {
                 });
               }}
             >
-              🎯 Generate My First DM
+              🎯 Generate My First Business Message
             </Button>
             <Link href="/premium">
               <Button variant="outline" size="lg" className="text-lg px-8 py-6 rounded-xl">
@@ -380,8 +379,8 @@ export default function Home() {
         {/* Smart Personalization Engine */}
         <Card className="max-w-4xl mx-auto p-8 shadow-2xl">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-2">Smart Personalization Engine</h2>
-            <p className="text-muted-foreground">Tell us about your outreach and we'll craft the perfect message</p>
+            <h2 className="text-2xl font-bold mb-2">Smart Business Outreach Engine</h2>
+            <p className="text-muted-foreground">Tell us about your recipient and business goals, and we'll craft the perfect professional message</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -391,13 +390,13 @@ export default function Home() {
                 <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                   <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">✍️</span>
                 </div>
-                <h3 className="text-lg font-semibold">Recipient Info</h3>
+                <h3 className="text-lg font-semibold">Contact Information</h3>
               </div>
               
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="recipientName" className="text-sm font-medium">
-                    Recipient Name
+                    Contact Name
                   </Label>
                   <Input
                     id="recipientName"
@@ -410,13 +409,13 @@ export default function Home() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="recipientRole" className="text-sm font-medium">
-                    Their Role
+                    Their Role/Title
                   </Label>
                   <Input
                     id="recipientRole"
                     value={recipientRole}
                     onChange={(e) => setRecipientRole(e.target.value)}
-                    placeholder="e.g., Marketing Director"
+                    placeholder="e.g., Marketing Manager, Business Owner"
                     className="rounded-lg"
                   />
                 </div>
@@ -436,17 +435,19 @@ export default function Home() {
                 
                 <div className="space-y-2">
                   <Label htmlFor="messageReason" className="text-sm font-medium">
-                    Reason for Message
+                    Purpose of Outreach
                   </Label>
                   <Select value={messageReason} onValueChange={setMessageReason}>
                     <SelectTrigger className="rounded-lg">
-                      <SelectValue placeholder="Select reason" />
+                      <SelectValue placeholder="Select purpose" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="job">Job Opportunity</SelectItem>
-                      <SelectItem value="partnership">Partnership</SelectItem>
-                      <SelectItem value="sales">Sales</SelectItem>
-                      <SelectItem value="intro">Introduction</SelectItem>
+                      <SelectItem value="influencer-partnership">Influencer Partnership</SelectItem>
+                      <SelectItem value="customer-followup">Customer Follow-up</SelectItem>
+                      <SelectItem value="brand-collaboration">Brand Collaboration</SelectItem>
+                      <SelectItem value="review-response">Review Response</SelectItem>
+                      <SelectItem value="client-outreach">Client Outreach</SelectItem>
+                      <SelectItem value="thank-you">Thank You Message</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
@@ -455,13 +456,13 @@ export default function Home() {
               
               <div className="space-y-2">
                 <Label htmlFor="optionalHook" className="text-sm font-medium">
-                  Optional Hook
+                  Context/Hook (Optional)
                 </Label>
                 <Input
                   id="optionalHook"
                   value={optionalHook}
                   onChange={(e) => setOptionalHook(e.target.value)}
-                  placeholder="e.g., Saw your post on LinkedIn about AI trends"
+                  placeholder="e.g., Loved your Instagram post about your new product launch"
                   className="rounded-lg"
                 />
               </div>
@@ -473,13 +474,13 @@ export default function Home() {
                 <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
                   <span className="text-sm font-semibold text-green-600 dark:text-green-400">🤖</span>
                 </div>
-                <h3 className="text-lg font-semibold">Tone Selector</h3>
+                <h3 className="text-lg font-semibold">Communication Style</h3>
               </div>
               
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="toneStyle" className="text-sm font-medium">
-                    Message Tone
+                    Professional Tone
                   </Label>
                   <Select value={tone} onValueChange={(value) => {
                     setTone(value);
@@ -489,31 +490,31 @@ export default function Home() {
                       <SelectValue placeholder="Select tone" />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* Standard Tones */}
-                      <SelectItem value="professional">🧑‍💼 Professional</SelectItem>
-                      <SelectItem value="friendly">😊 Friendly</SelectItem>
-                      <SelectItem value="direct">📍 Direct</SelectItem>
-                      <SelectItem value="empathetic">💙 Empathetic</SelectItem>
-                      <SelectItem value="assertive">💪 Assertive</SelectItem>
+                      {/* Business-focused Standard Tones */}
+                      <SelectItem value="professional">🧑‍💼 Professional (formal business communication)</SelectItem>
+                      <SelectItem value="friendly">😊 Friendly (warm but professional)</SelectItem>
+                      <SelectItem value="direct">📍 Direct (straight to the point)</SelectItem>
+                      <SelectItem value="empathetic">💙 Appreciative (thank you messages)</SelectItem>
+                      <SelectItem value="assertive">💪 Enthusiastic (excited about partnerships)</SelectItem>
                       
-                      {/* Advanced Tones */}
-                      <SelectItem value="funny-weird">😄 Funny & Weird</SelectItem>
-                      <SelectItem value="curious-intrigued">🤔 Curious & Intrigued</SelectItem>
-                      <SelectItem value="fanboy-mode">🤩 Fanboy Mode</SelectItem>
-                      <SelectItem value="apologetic">😅 Apologetic</SelectItem>
+                      {/* Advanced Business Tones */}
+                      <SelectItem value="funny-weird">😄 Creative & Engaging</SelectItem>
+                      <SelectItem value="curious-intrigued">🤔 Curious & Consultative</SelectItem>
+                      <SelectItem value="fanboy-mode">🤩 Admiring & Supportive</SelectItem>
+                      <SelectItem value="apologetic">😅 Apologetic & Understanding</SelectItem>
                       
-                      {/* Premium Tones */}
+                      {/* Premium Business Tones */}
                       <SelectItem value="bold-cocky" disabled={user.tier !== 'premium'}>
-                        😈 Bold & Cocky {user.tier !== 'premium' && '(Premium)'}
+                        😈 Bold & Confident {user.tier !== 'premium' && '(Premium)'}
                       </SelectItem>
                       <SelectItem value="flirty-playful" disabled={user.tier !== 'premium'}>
-                        😍 Flirty & Playful {user.tier !== 'premium' && '(Premium)'}
+                        😍 Playful & Charming {user.tier !== 'premium' && '(Premium)'}
                       </SelectItem>
                       <SelectItem value="chaotic-evil" disabled={user.tier !== 'premium'}>
-                        🧌 Chaotic Evil {user.tier !== 'premium' && '(Premium)'}
+                        🧌 Unconventional & Memorable {user.tier !== 'premium' && '(Premium)'}
                       </SelectItem>
                       <SelectItem value="whisper-mode" disabled={user.tier !== 'premium'}>
-                        🤫 Whisper Mode {user.tier !== 'premium' && '(Premium)'}
+                        🤫 Subtle & Intriguing {user.tier !== 'premium' && '(Premium)'}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -527,24 +528,25 @@ export default function Home() {
                 <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
                   <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">📄</span>
                 </div>
-                <h3 className="text-lg font-semibold">Use-Case Scenario</h3>
+                <h3 className="text-lg font-semibold">Business Scenario</h3>
               </div>
               
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="useCase" className="text-sm font-medium">
-                    Scenario Type
+                    Business Use Case
                   </Label>
                   <Select value={useCase} onValueChange={setUseCase}>
                     <SelectTrigger className="rounded-lg">
-                      <SelectValue placeholder="Select scenario" />
+                      <SelectValue placeholder="Select use case" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="b2b-sales">B2B Sales Intro</SelectItem>
-                      <SelectItem value="partnership">Partnership Inquiry</SelectItem>
-                      <SelectItem value="recruiting">Recruiting Pitch</SelectItem>
-                      <SelectItem value="startup-collab">Startup Collaboration</SelectItem>
-                      <SelectItem value="cold-intro">Cold Introduction</SelectItem>
+                      <SelectItem value="influencer-outreach">Influencer Partnership Outreach</SelectItem>
+                      <SelectItem value="customer-service">Customer Follow-up & Service</SelectItem>
+                      <SelectItem value="brand-collaboration">Brand Collaboration Request</SelectItem>
+                      <SelectItem value="review-management">Professional Review Response</SelectItem>
+                      <SelectItem value="lead-generation">Cold Outreach to Potential Clients</SelectItem>
+                      <SelectItem value="customer-appreciation">Customer Thank You Messages</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -601,11 +603,11 @@ export default function Home() {
                 {generateMutation.isPending ? (
                   <>
                     <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-                    Generating Your Perfect DM...
+                    Generating Your Professional Message...
                   </>
                 ) : (
                   <>
-                    🎯 Generate Message
+                    🎯 Generate Business Message
                   </>
                 )}
               </Button>
@@ -613,12 +615,96 @@ export default function Home() {
           </form>
         </Card>
 
+        {/* Use Cases Section */}
+        <div className="max-w-6xl mx-auto mt-16 mb-12">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Perfect for Every Business Situation</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              From influencer partnerships to customer follow-ups, our AI crafts the perfect message for your business needs
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card className="p-6">
+              <div className="mb-4">
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-4">
+                  <span className="text-2xl">🤝</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Influencer Partnership Outreach</h3>
+                <p className="text-muted-foreground">
+                  Connect with influencers and content creators for brand collaborations and sponsored content opportunities.
+                </p>
+              </div>
+            </Card>
+            
+            <Card className="p-6">
+              <div className="mb-4">
+                <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center mb-4">
+                  <span className="text-2xl">💬</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Customer Follow-up Messages</h3>
+                <p className="text-muted-foreground">
+                  Nurture customer relationships with thoughtful follow-up messages that show you care about their experience.
+                </p>
+              </div>
+            </Card>
+            
+            <Card className="p-6">
+              <div className="mb-4">
+                <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center mb-4">
+                  <span className="text-2xl">🎯</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Brand Collaboration Requests</h3>
+                <p className="text-muted-foreground">
+                  Pitch partnerships and cross-promotional opportunities with other businesses in your industry.
+                </p>
+              </div>
+            </Card>
+            
+            <Card className="p-6">
+              <div className="mb-4">
+                <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center mb-4">
+                  <span className="text-2xl">⭐</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Professional Review Responses</h3>
+                <p className="text-muted-foreground">
+                  Respond to customer reviews and comments in a professional, branded voice that builds trust.
+                </p>
+              </div>
+            </Card>
+            
+            <Card className="p-6">
+              <div className="mb-4">
+                <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center mb-4">
+                  <span className="text-2xl">📈</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Cold Outreach to Potential Clients</h3>
+                <p className="text-muted-foreground">
+                  Generate compelling first messages to prospects that open doors to new business opportunities.
+                </p>
+              </div>
+            </Card>
+            
+            <Card className="p-6">
+              <div className="mb-4">
+                <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center mb-4">
+                  <span className="text-2xl">🙏</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Customer Thank You Messages</h3>
+                <p className="text-muted-foreground">
+                  Show appreciation to loyal customers with personalized thank you messages that strengthen relationships.
+                </p>
+              </div>
+            </Card>
+          </div>
+        </div>
+
         {/* Generated Message Display */}
         {generatedMessage && (
           <Card className="max-w-4xl mx-auto mt-8 p-8">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold">Your Generated DM</h3>
+                <h3 className="text-xl font-semibold">Your Professional Message</h3>
                 <Button variant="outline" onClick={copyToClipboard} className="rounded-lg">
                   <Copy className="w-4 h-4 mr-2" />
                   Copy Message

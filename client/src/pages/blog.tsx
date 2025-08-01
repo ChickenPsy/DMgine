@@ -4,10 +4,10 @@ export default function Blog() {
   return (
     <>
       <Helmet>
-        <title>Blog - Cold DM Tips & Strategies | DMgine</title>
+        <title>Blog - Business Outreach Tips & Strategies | DMgine Business</title>
         <meta 
           name="description" 
-          content="Learn proven strategies for writing effective cold DMs, LinkedIn outreach, and conversation starters that actually get responses. Expert tips for better messaging." 
+          content="Learn proven strategies for writing effective business outreach messages, social media communication, and professional messaging that gets responses from clients and partners." 
         />
       </Helmet>
       
@@ -16,10 +16,10 @@ export default function Blog() {
           {/* Blog Header */}
           <header className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-4">
-              DMgine Blog
+              DMgine Business Blog
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Master the art of cold messaging with proven strategies, real examples, and actionable tips.
+              Master professional business outreach with proven strategies, real examples, and actionable tips for small business owners.
             </p>
           </header>
 
@@ -30,57 +30,57 @@ export default function Blog() {
             <article className="max-w-2xl mx-auto">
               <header className="mb-8">
                 <h2 className="text-3xl font-bold text-black dark:text-white mb-4">
-                  How to Write Cold DMs That Actually Work
+                  How to Write Business Outreach Messages That Actually Work
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed">
-                  Most cold DMs fail because they sound like mass-produced spam. The secret to success lies in three fundamental principles: personalization, brevity, and clear intent.
+                  Most business outreach messages fail because they sound like mass-produced spam. The secret to success lies in three fundamental principles: personalization, brevity, and clear business value.
                 </p>
               </header>
               
               <div className="prose prose-lg dark:prose-invert max-w-none">
-                <h3 className="text-xl font-semibold text-black dark:text-white mt-8 mb-4">Why Most Cold DMs Fail</h3>
+                <h3 className="text-xl font-semibold text-black dark:text-white mt-8 mb-4">Why Most Business Messages Fail</h3>
                 <p className="text-gray-700 dark:text-gray-300 mb-6">
-                  The average person receives dozens of generic messages daily. Your DM needs to stand out by being genuinely relevant to the recipient. This means doing your homework before hitting send.
+                  The average business owner receives dozens of generic outreach messages daily. Your message needs to stand out by being genuinely relevant to their business needs. This means researching their brand and current challenges before reaching out.
                 </p>
 
-                <h3 className="text-xl font-semibold text-black dark:text-white mt-8 mb-4">The Three Pillars of Effective Cold Messaging</h3>
+                <h3 className="text-xl font-semibold text-black dark:text-white mt-8 mb-4">The Three Pillars of Effective Business Outreach</h3>
                 
                 <div className="space-y-6">
                   <div>
-                    <h4 className="text-lg font-medium text-black dark:text-white mb-2">1. Personalization That Matters</h4>
+                    <h4 className="text-lg font-medium text-black dark:text-white mb-2">1. Business-Relevant Personalization</h4>
                     <p className="text-gray-700 dark:text-gray-300">
-                      Don't just mention their company name. Reference recent achievements, shared connections, or specific content they've posted. Show you've invested time in understanding their world.
+                      Don't just mention their business name. Reference recent product launches, social media posts, or industry achievements. Show you've invested time in understanding their brand and current business goals.
                     </p>
                   </div>
                   
                   <div>
-                    <h4 className="text-lg font-medium text-black dark:text-white mb-2">2. Brevity is Respect</h4>
+                    <h4 className="text-lg font-medium text-black dark:text-white mb-2">2. Respect Their Time</h4>
                     <p className="text-gray-700 dark:text-gray-300">
-                      Keep your message under 100 words. Busy professionals scan messages quickly. If you can't explain your value in a few sentences, you haven't clarified your thinking.
+                      Keep your message under 100 words. Busy business owners scan messages quickly. If you can't explain your business value in a few sentences, you haven't clarified your offering.
                     </p>
                   </div>
                   
                   <div>
-                    <h4 className="text-lg font-medium text-black dark:text-white mb-2">3. Clear Intent</h4>
+                    <h4 className="text-lg font-medium text-black dark:text-white mb-2">3. Clear Business Intent</h4>
                     <p className="text-gray-700 dark:text-gray-300">
-                      State exactly what you want and why it benefits them. Vague requests get ignored. Specific asks with clear value propositions get responses.
+                      State exactly what collaboration you're proposing and why it benefits their business. Vague partnership requests get ignored. Specific opportunities with clear mutual benefits get responses.
                     </p>
                   </div>
                 </div>
 
-                <h3 className="text-xl font-semibold text-black dark:text-white mt-8 mb-4">Good DM vs Bad DM Example</h3>
+                <h3 className="text-xl font-semibold text-black dark:text-white mt-8 mb-4">Good Business Message vs Bad Business Message Example</h3>
                 
                 <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4 mb-6">
-                  <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">❌ Bad DM</h4>
+                  <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">❌ Bad Business Message</h4>
                   <p className="text-red-700 dark:text-red-300 italic">
                     "Hi! I help businesses grow their revenue through innovative marketing solutions. We've helped 500+ companies achieve 3x growth. Would love to chat about how we can help your business succeed too!"
                   </p>
                 </div>
 
                 <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 p-4">
-                  <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">✅ Good DM</h4>
+                  <h4 className="font-medium text-green-800 dark:text-green-200 mb-2">✅ Good Business Message</h4>
                   <p className="text-green-700 dark:text-green-300 italic">
-                    "Hi Sarah, saw your post about struggling with B2B lead gen at TechCorp. We helped a similar SaaS company increase qualified leads by 150% using LinkedIn automation. Would you be open to a 15-minute call this week to share the specific strategy?"
+                    "Hi Sarah, loved your Instagram story about launching your new sustainable jewelry line! I run a small marketing agency that specializes in eco-friendly brands. We helped GreenStyle Boutique increase their social media engagement by 150% last quarter. Would you be interested in a quick 15-minute chat about potential collaboration opportunities for your brand launch?"
                   </p>
                 </div>
               </div>

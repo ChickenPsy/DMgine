@@ -1,8 +1,8 @@
-# DM Generator Application
+# DMgine Business - Social Media Assistant for Small Business Owners
 
 ## Overview
 
-This is a modern React-based web application that generates personalized direct messages using AI. The application allows users to input a target person and select a tone (professional, casual, or chaos) to generate customized DMs. Built with a modern full-stack architecture using React, Express, and PostgreSQL with Drizzle ORM.
+This is a modern React-based web application that generates professional business outreach messages using AI. The application has been pivoted from dating/personal messaging to serve as a social media assistant for small business owners, allowing them to create professional communications for influencer partnerships, customer follow-ups, brand collaborations, and client outreach. Built with a modern full-stack architecture using React, Express, and PostgreSQL with Drizzle ORM.
 
 ## Recent Updates (January 2025)
 
@@ -27,10 +27,12 @@ This is a modern React-based web application that generates personalized direct 
 ✓ **Stripe API Version Update**: Updated Stripe API version from '2024-06-20' to '2025-06-30.basil' to match TypeScript expectations
 ✓ **Target State Management**: Fixed target state update issue ensuring FreemiumModal retry functionality works with proper recipient information
 ✓ **Code Quality**: Ensured all files have proper trailing newlines and pass TypeScript compilation
+✓ **B2B Pivot (August 2025)**: Successfully transformed the app from dating/personal messaging to B2B social media assistant targeting small business owners. Updated all copy, use cases, pricing tiers, and messaging to focus on professional business communication, influencer partnerships, customer follow-ups, and brand collaborations.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+B2B Pivot Requirements: Transform app from dating to B2B social media assistant targeting small business owners with professional messaging for influencer partnerships, customer relations, and business collaborations.
 
 ## System Architecture
 
@@ -58,11 +60,12 @@ Preferred communication style: Simple, everyday language.
 ## Key Components
 
 ### Core Features
-1. **DM Generation**: AI-powered message generation with multiple tone options
-2. **Tier-Based Access**: Free, Lite, and Premium tiers with different token limits
-3. **Premium Features**: Off the Rails Mode restricted as premium feature
-4. **Responsive UI**: Mobile-first design with Tailwind CSS
-5. **Real-time Feedback**: Toast notifications and loading states
+1. **Business Message Generation**: AI-powered professional message generation with business-focused tone options
+2. **B2B Pricing Tiers**: Starter ($19/month, 50 messages), Professional ($49/month, 200 messages), Agency ($99/month, unlimited)
+3. **Business Use Cases**: Influencer partnerships, customer follow-ups, brand collaborations, review responses, client outreach, thank you messages
+4. **Professional Communication Styles**: Renamed tones to business-focused options (Professional, Friendly, Direct, Appreciative, Enthusiastic, etc.)
+5. **Responsive UI**: Mobile-first design with Tailwind CSS
+6. **Real-time Feedback**: Toast notifications and loading states
 
 ### Database Schema
 - **Users Table**: Basic user authentication schema (id, username, password)
