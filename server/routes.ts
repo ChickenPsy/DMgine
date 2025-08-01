@@ -202,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { default: Stripe } = await import('stripe');
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2024-06-20'
+        apiVersion: '2025-06-30.basil'
       });
       
       const session = await stripe.checkout.sessions.create({

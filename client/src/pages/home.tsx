@@ -181,6 +181,9 @@ export default function Home() {
     // Construct target from new form fields
     const targetDescription = `${recipientName}${recipientRole ? `, ${recipientRole}` : ''}${companyName ? ` at ${companyName}` : ''}`;
     
+    // Update target state for potential retry in FreemiumModal
+    setTarget(targetDescription);
+    
     generateMutation.mutate({ 
       target: targetDescription, 
       tone
