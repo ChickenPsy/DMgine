@@ -1,0 +1,51 @@
+I need to pivot my DM generator app from dating to B2B social media assistant. Here's what needs to change:
+
+CURRENT STATE: My app is at dmgine.com - it generates personalized DMs with multiple tones, has user auth, and tier-based pricing.
+
+PIVOT GOAL: Rebrand as "Social Media Assistant for Small Business Owners"
+
+CHANGES NEEDED:
+
+1. HOMEPAGE REDESIGN:
+- New headline: "Stop Spending Hours Crafting the Perfect Business DM"
+- Subheading: "Your AI social media assistant writes professional outreach messages in seconds - so you can focus on running your business"
+- Replace dating/personal references with business use cases
+
+2. USE CASES SECTION:
+Replace current examples with:
+- Influencer partnership outreach
+- Customer follow-up messages  
+- Brand collaboration requests
+- Professional responses to reviews/comments
+- Cold outreach to potential clients
+- Thank you messages to customers
+
+3. TONE OPTIONS:
+Rename existing tones to be business-focused:
+- Professional (formal business communication)
+- Friendly (warm but professional)
+- Enthusiastic (excited about partnerships)
+- Direct (straight to the point)
+- Appreciative (thank you messages)
+Keep the premium tones but rebrand them appropriately
+
+4. PRICING PAGE:
+Update to business tiers:
+- Starter: $19/month (50 messages) - "Perfect for solo entrepreneurs"
+- Professional: $49/month (200 messages) - "Ideal for small teams"  
+- Agency: $99/month (unlimited) - "For marketing agencies"
+
+5. COPY CHANGES:
+- Replace "target person" with "recipient" or "contact"
+- Change "DM" references to "messages" or "outreach"
+- Add business-focused placeholder text
+- Update meta descriptions and titles for SEO
+
+6. ADD TESTIMONIAL PLACEHOLDERS:
+- "Saves me 2 hours a week on social media outreach" - Local Restaurant Owner
+- "My influencer partnerships increased 40% with better initial messages" - Boutique Owner
+- "Finally sound professional when reaching out to potential clients" - Consultant
+
+Keep all existing functionality (auth, payments, AI generation) but rebrand the interface and copy for B2B use.
+
+Make sure the core app logic stays the same - just changing the presentation layer to target small business owners instead of dating.
